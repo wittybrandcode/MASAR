@@ -267,6 +267,28 @@ var TIME_RULER_BATCH_IMPORTER = (function () {
         if (typeof onUpdate === 'function') onUpdate(p);
     }
 
+    function applyUserTemplate(id, state, onUpdate) {
+        var store = (typeof TIME_RULER_STATE_STORE !== 'undefined') ? TIME_RULER_STATE_STORE : null;
+        if (!store) return;
+        var list = store.getUserTemplates();
+        var tpl = null;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) { tpl = list[i]; break; }
+        }
+        if (!tpl || !tpl.state) return;
+        var snap = tpl.state;
+        for (var k in snap) {
+            if (snap.hasOwnProperty(k) && k !== 'nodes') {
+                state[k] = snap[k];
+            }
+        }
+        if (snap.nodes && Array.isArray(snap.nodes)) {
+            state.nodes = JSON.parse(JSON.stringify(snap.nodes));
+        }
+        state.selectedNodeIndex = 0;
+        if (typeof onUpdate === 'function') onUpdate(tpl);
+    }
+
     function initColorPalettes(state, onUpdate) {
         document.querySelectorAll('.palette-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -290,6 +312,7 @@ var TIME_RULER_BATCH_IMPORTER = (function () {
         initBatchImporter: initBatchImporter,
         applyQuickPattern: applyQuickPattern,
         applyPreset: applyPreset,
+        applyUserTemplate: applyUserTemplate,
         initColorPalettes: initColorPalettes
     };
 })();

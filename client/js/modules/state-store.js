@@ -366,6 +366,80 @@ var TIME_RULER_STATE_STORE = (function () {
         }
     };
 
+    // Backward-compatibility and UI key aliases
+    PRESETS.history = PRESETS.scientific;
+    PRESETS.cyber = PRESETS.retro_neon;
+    PRESETS.minimal = PRESETS.minimal_clean;
+    PRESETS.corporate_en = PRESETS.roadmap;
+
+    /* ------------------------------------------------------------------ */
+    /* User Custom Templates Persistence Engine                           */
+    /* ------------------------------------------------------------------ */
+    var USER_TEMPLATES_KEY = 'MASAR_USER_PRESETS_V1';
+
+    function getUserTemplates() {
+        try {
+            var raw = localStorage.getItem(USER_TEMPLATES_KEY);
+            if (!raw) return [];
+            var parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveUserTemplate(name, stateObj) {
+        if (!name || typeof name !== 'string') return { ok: false, message: 'اسم القالب غير صالح' };
+        var cleanName = name.trim();
+        if (!cleanName) return { ok: false, message: 'يرجى إدخال اسم للقالب' };
+        try {
+            var list = getUserTemplates();
+            var snapshot = JSON.parse(JSON.stringify(stateObj));
+            var newTpl = {
+                id: 'tpl_' + Date.now(),
+                name: cleanName,
+                createdAt: new Date().toISOString(),
+                state: snapshot
+            };
+            list.unshift(newTpl);
+            localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(list));
+            return { ok: true, template: newTpl };
+        } catch (err) {
+            return { ok: false, message: String(err) };
+        }
+    }
+
+    function deleteUserTemplate(id) {
+        try {
+            var list = getUserTemplates();
+            var filtered = list.filter(function (t) { return t.id !== id; });
+            localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(filtered));
+            return { ok: true };
+        } catch (err) {
+            return { ok: false, message: String(err) };
+        }
+    }
+
+    function importUserTemplate(tplObj) {
+        if (!tplObj || typeof tplObj !== 'object' || !tplObj.state) {
+            return { ok: false, message: 'ملف القالب غير صالح' };
+        }
+        try {
+            var list = getUserTemplates();
+            var newTpl = {
+                id: 'tpl_' + Date.now(),
+                name: tplObj.name || 'قالب مستورد',
+                createdAt: new Date().toISOString(),
+                state: tplObj.state
+            };
+            list.unshift(newTpl);
+            localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(list));
+            return { ok: true, template: newTpl };
+        } catch (err) {
+            return { ok: false, message: String(err) };
+        }
+    }
+
     /* ------------------------------------------------------------------ */
     /* Digit Normalizer: Eastern Arabic / Hindi / Persian -> Standard 0-9 */
     /* ------------------------------------------------------------------ */
@@ -591,7 +665,11 @@ var TIME_RULER_STATE_STORE = (function () {
         loadSavedState: loadSavedState,
         toStandardDigits: toStandardDigits,
         normalizeNodeSources: normalizeNodeSources,
-        syncLegacyNodeFields: syncLegacyNodeFields
+        syncLegacyNodeFields: syncLegacyNodeFields,
+        getUserTemplates: getUserTemplates,
+        saveUserTemplate: saveUserTemplate,
+        deleteUserTemplate: deleteUserTemplate,
+        importUserTemplate: importUserTemplate
     };
 })();
 

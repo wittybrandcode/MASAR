@@ -1438,3 +1438,59 @@ div i.fa-regular {
 .canvas-cursor-default {
     cursor: default !important;
 }
+
+/* =============================================================================
+   Presets & Custom Templates Library Styles
+   ========================================================================== */
+.btn-header-presets {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #10b981;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.btn-header-presets:hover {
+    background: rgba(16, 185, 129, 0.22);
+    border-color: #10b981;
+    color: #34d399;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+}
+.preset-card-item {
+    background: #14141a;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    transition: all 0.15s ease;
+}
+.preset-card-item:hover {
+    background: #1a1a23;
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.custom-tpl-item {
+    background: #14141a;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: all 0.15s ease;
+}
+.custom-tpl-item:hover {
+    background: #1c1c25;
+    border-color: rgba(16, 185, 129, 0.4);
+}
+

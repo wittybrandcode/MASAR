@@ -266,6 +266,243 @@
         } catch (eKey) {}
     }
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function downloadJSON(filename, data) {
+        var jsonStr = JSON.stringify(data, null, 2);
+        var blob = new Blob([jsonStr], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function initPresetsModal() {
+        var modal = $('modal-presets');
+        var btnHeader = $('btn-header-presets');
+        var btnToolbar = $('btn-open-presets-subbar');
+        var btnClose = $('btn-close-presets-modal');
+        var tabBuiltin = $('tab-presets-builtin');
+        var tabCustom = $('tab-presets-custom');
+        var viewBuiltin = $('view-presets-builtin');
+        var viewCustom = $('view-presets-custom');
+        var customCount = $('txt-custom-tpl-count');
+        var customList = $('custom-templates-list');
+        var btnSaveCurrent = $('btn-save-current-as-template');
+        var inpSaveName = $('inp-save-template-name');
+        var btnExportAll = $('btn-export-all-templates');
+        var fileImport = $('file-import-template');
+
+        function updateCustomCount() {
+            if (!customCount) return;
+            var list = TIME_RULER_STATE_STORE.getUserTemplates();
+            customCount.textContent = list.length;
+        }
+
+        function renderCustomTemplates() {
+            if (!customList) return;
+            var list = TIME_RULER_STATE_STORE.getUserTemplates();
+            updateCustomCount();
+            if (list.length === 0) {
+                customList.innerHTML = '<div style="font-size: 11px; color: var(--text-dim); text-align: center; padding: 16px 8px; border: 1px dashed var(--border-subtle); border-radius: 6px;">لا توجد قوالب مخصصة محفوظة بعد.<br>احفظ تشكيلة خطك الزمني الحالي لتظهر هنا وتستخدمها في أي وقت.</div>';
+                return;
+            }
+            customList.innerHTML = '';
+            list.forEach(function (tpl) {
+                var item = document.createElement('div');
+                item.className = 'custom-tpl-item';
+                var dateStr = '';
+                try {
+                    var d = new Date(tpl.createdAt);
+                    dateStr = d.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                } catch (e) {
+                    dateStr = '';
+                }
+                var nodeCount = (tpl.state && Array.isArray(tpl.state.nodes)) ? tpl.state.nodes.length : 0;
+
+                item.innerHTML =
+                    '<div style="flex: 1; overflow: hidden;">' +
+                    '  <div style="display: flex; align-items: center; gap: 6px;">' +
+                    '    <span style="font-weight: 700; font-size: 11px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + escapeHtml(tpl.name) + '</span>' +
+                    '    <span style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 1px 5px; border-radius: 10px;">' + nodeCount + ' محطات</span>' +
+                    '  </div>' +
+                    '  <div style="font-size: 9px; color: var(--text-dim); margin-top: 2px;">' + dateStr + '</div>' +
+                    '</div>' +
+                    '<div style="display: flex; gap: 4px; flex-shrink: 0;">' +
+                    '  <button type="button" class="ab ab-p btn-apply-custom" data-id="' + tpl.id + '" style="width: auto; padding: 3px 8px; font-size: 10px;"><i class="fa-solid fa-check"></i> تطبيق</button>' +
+                    '  <button type="button" class="btn-tool btn-export-single" data-id="' + tpl.id + '" title="تصدير JSON" style="width: 24px; height: 24px; padding: 0;"><i class="fa-solid fa-download"></i></button>' +
+                    '  <button type="button" class="btn-tool btn-delete-custom" data-id="' + tpl.id + '" title="حذف القالب" style="width: 24px; height: 24px; padding: 0; color: #ef4444;"><i class="fa-solid fa-trash"></i></button>' +
+                    '</div>';
+                customList.appendChild(item);
+            });
+
+            // Bind actions inside list
+            customList.querySelectorAll('.btn-apply-custom').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.dataset.id;
+                    TIME_RULER_BATCH_IMPORTER.applyUserTemplate(id, state, function (tpl) {
+                        saveState();
+                        renderAll();
+                        TIME_RULER_HOST_BRIDGE.executeHostGenerate(state, false, true, function (ok) {
+                            if (ok) TIME_RULER_HOST_BRIDGE.setFeedback('✓ تم تطبيق وبناء القالب المخصص: ' + tpl.name, 'ok');
+                        });
+                        closeModal();
+                    });
+                });
+            });
+
+            customList.querySelectorAll('.btn-export-single').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.dataset.id;
+                    var list = TIME_RULER_STATE_STORE.getUserTemplates();
+                    var found = null;
+                    for (var i = 0; i < list.length; i++) {
+                        if (list[i].id === id) { found = list[i]; break; }
+                    }
+                    if (!found) return;
+                    downloadJSON(found.name.replace(/\s+/g, '_') + '.json', found);
+                });
+            });
+
+            customList.querySelectorAll('.btn-delete-custom').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.dataset.id;
+                    if (confirm('هل أنت متأكد من حذف هذا القالب؟')) {
+                        TIME_RULER_STATE_STORE.deleteUserTemplate(id);
+                        renderCustomTemplates();
+                        TIME_RULER_HOST_BRIDGE.setFeedback('✓ تم حذف القالب', 'ok');
+                    }
+                });
+            });
+        }
+
+        function openModal() {
+            if (!modal) return;
+            modal.style.display = 'flex';
+            updateCustomCount();
+            renderCustomTemplates();
+        }
+
+        function closeModal() {
+            if (!modal) return;
+            modal.style.display = 'none';
+        }
+
+        if (btnHeader) btnHeader.addEventListener('click', openModal);
+        if (btnToolbar) btnToolbar.addEventListener('click', openModal);
+        if (btnClose) btnClose.addEventListener('click', closeModal);
+        if (modal) {
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeModal();
+            });
+        }
+
+        // Subtabs
+        if (tabBuiltin && tabCustom) {
+            tabBuiltin.addEventListener('click', function () {
+                tabBuiltin.classList.add('active');
+                tabCustom.classList.remove('active');
+                if (viewBuiltin) viewBuiltin.style.display = 'flex';
+                if (viewCustom) viewCustom.style.display = 'none';
+            });
+            tabCustom.addEventListener('click', function () {
+                tabCustom.classList.add('active');
+                tabBuiltin.classList.remove('active');
+                if (viewBuiltin) viewBuiltin.style.display = 'none';
+                if (viewCustom) viewCustom.style.display = 'flex';
+                renderCustomTemplates();
+            });
+        }
+
+        // Apply Builtin Presets in Modal
+        document.querySelectorAll('.btn-apply-builtin').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var pKey = btn.dataset.preset;
+                TIME_RULER_BATCH_IMPORTER.applyPreset(pKey, state, function (p) {
+                    saveState();
+                    renderAll();
+                    TIME_RULER_HOST_BRIDGE.executeHostGenerate(state, false, true, function (ok) {
+                        if (ok) TIME_RULER_HOST_BRIDGE.setFeedback('✓ تم تطبيق وبناء قالب: ' + (p.name || pKey), 'ok');
+                    });
+                    closeModal();
+                });
+            });
+        });
+
+        // Save Current Work as Template
+        if (btnSaveCurrent && inpSaveName) {
+            btnSaveCurrent.addEventListener('click', function () {
+                var name = inpSaveName.value.trim();
+                if (!name) {
+                    alert('يرجى كتابة اسم للقالب أولاً.');
+                    inpSaveName.focus();
+                    return;
+                }
+                if (typeof TIME_RULER_CARD_BUILDER !== 'undefined' && typeof TIME_RULER_CARD_BUILDER.syncStateFromDOM === 'function') {
+                    TIME_RULER_CARD_BUILDER.syncStateFromDOM();
+                }
+                var res = TIME_RULER_STATE_STORE.saveUserTemplate(name, state);
+                if (res.ok) {
+                    inpSaveName.value = '';
+                    renderCustomTemplates();
+                    TIME_RULER_HOST_BRIDGE.setFeedback('✓ تم حفظ القالب المخصص: ' + name, 'ok');
+                } else {
+                    alert(res.message || 'فشل حفظ القالب');
+                }
+            });
+        }
+
+        // Export All Templates
+        if (btnExportAll) {
+            btnExportAll.addEventListener('click', function () {
+                var list = TIME_RULER_STATE_STORE.getUserTemplates();
+                if (list.length === 0) {
+                    alert('لا توجد قوالب مخصصة محفوظة لتصديرها.');
+                    return;
+                }
+                downloadJSON('masar_custom_templates.json', list);
+            });
+        }
+
+        // Import Template JSON
+        if (fileImport) {
+            fileImport.addEventListener('change', function (e) {
+                var file = e.target.files && e.target.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function (evt) {
+                    try {
+                        var parsed = JSON.parse(evt.target.result);
+                        if (Array.isArray(parsed)) {
+                            parsed.forEach(function (item) { TIME_RULER_STATE_STORE.importUserTemplate(item); });
+                        } else {
+                            TIME_RULER_STATE_STORE.importUserTemplate(parsed);
+                        }
+                        renderCustomTemplates();
+                        TIME_RULER_HOST_BRIDGE.setFeedback('✓ تم استيراد القالب بنجاح!', 'ok');
+                    } catch (err) {
+                        alert('الملف المحدد ليس ملف JSON صالحاً: ' + String(err));
+                    }
+                    fileImport.value = '';
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        updateCustomCount();
+    }
+
     function init() {
         state = TIME_RULER_STATE_STORE.getState();
 
@@ -300,6 +537,7 @@
         initTabs();
         initCollapsibles();
         bindEvents();
+        initPresetsModal();
 
         TIME_RULER_SHAPES_ENGINE.initSvgImporterModal(state, function () {
             saveState();
