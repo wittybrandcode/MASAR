@@ -16,7 +16,7 @@
 [![Adobe AE](https://img.shields.io/badge/Adobe%20After%20Effects-2020%20--%202025+-9999FF?style=for-the-badge&logo=adobeaftereffects&logoColor=white)](https://www.adobe.com/products/aftereffects.html)
 [![CEP Engine](https://img.shields.io/badge/CEP-11.0%20%7C%20ES3%20ExtendScript-059669?style=for-the-badge)](https://github.com/Adobe-CEP)
 [![UI System](https://img.shields.io/badge/UI-Adobe%20Spectrum%20Emerald-047857?style=for-the-badge)](https://spectrum.adobe.com/)
-[![License](https://img.shields.io/badge/License-Proprietary%20%7C%20Commercial-334155?style=for-the-badge)](LICENSES.md)
+[![License](https://img.shields.io/badge/License-Proprietary%20%7C%20Commercial-334155?style=for-the-badge)]#
 
 <p align="center">
   <b>«مسار» هو الإضافة البرمجية الأكثر تطوراً واحترافية لبناء وتوليد المخططات الزمنية والسلاسل الإجرائية والإنفوجرافيك التفاعلي في Adobe After Effects بضغطة زر واحدة.</b><br>
