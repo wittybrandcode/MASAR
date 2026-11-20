@@ -1,0 +1,255 @@
+// ============================================================================
+// TIME RULER — Core Numeric Time Engine (ExtendScript ES3, pure math)
+// ============================================================================
+// Module: TR.core.numericTime
+// Environment: After Effects 2023+ (ExtendScript ES3) AND Node 22 (test harness).
+// PURE MATH ONLY: no `app`, no DOM, no alert, no #include, no AE APIs.
+//
+// sequence(timeCfg) -> { cyclic, endIncluded, count, values:[{index, t, value}] }
+//
+//   mode "numeric" only (calendar/timecode are later milestones and throw
+//   {code:"UNSUPPORTED_TIME_MODE"}).
+//
+//   Bounded (default):
+//     - Ascending (start < end): value(i) = start + i*step, i = 0..count-1.
+//     - Descending (start > end): value(i) = start - i*step; t STILL ascends
+//       0..1 (t is the position inside the domain, not the value direction).
+//     - count = floor(|end-start| / step) + 1  (full major steps only).
+//     - Divisibility uses a span-relative epsilon:
+//       divisible iff |span - round(span/step)*step| <= EPS * max(1, |span|).
+//       (Robust for fractional steps like 0.1 and for large spans.)
+//     - If the end does not divide by step:
+//         includeEndPoint === true  -> extra final item {value: end, t: 1,
+//         endIncluded: true} (major count grows by 1).
+//         includeEndPoint !== true  -> stop at the last full step.
+//     - t is VALUE-BASED: t(i) = (i*step)/span for full-step items; t = 1 for
+//       the appended end item; count === 1 -> single item at t = 0.5.
+//       For divisible bounded ranges t(i) = i/(count-1), identical to the
+//       index-based geometry distributors.
+//
+//   Cyclic (distributionMode === "cyclic" or cyclic === true):
+//     - Requires |end-start| to divide exactly by step, else throws
+//       {code:"CYCLIC_NOT_DIVISIBLE"}.
+//     - count = round(|end-start|/step) + 1  (END-EXCLUSIVE closure: the wrap
+//       position is not a separate mark). 0..59 step 1 -> 60 items, t = i/count.
+//     - value(i) = start + i*step (descending when start > end), t = i/count
+//       ascending 0..(count-1)/count. endIncluded is always false.
+//
+// format(value, timeCfg) -> string
+//   - precision p (default 0): HALF-UP decimal rounding applied to the decimal
+//     string of the value (String(value) shortest form). This yields "2.01"
+//     for 2.005 at p=2 (Math.round(2.005*100)/100 would give 2.00 because
+//     2.005 stores as 2.00499999999999989...). Chosen behavior is documented
+//     in tests/geometry-cases.json.
+//   - p === 0 -> integer string without ".0".
+//   - Result = (prefix || "") + digits + (suffix || "").
+// ============================================================================
+
+var TR = $.global.TIME_RULER;
+if (typeof TR === 'undefined') { TR = {}; $.global.TIME_RULER = TR; }
+TR.core = TR.core || {};
+TR.core.numericTime = (function () {
+
+    var EPS = 1e-9;
+
+    function throwCode(code, message) {
+        var e = new Error(message || code);
+        e.code = code;
+        e.trError = true;
+        throw e;
+    }
+
+    function isFiniteNumber(v) {
+        return (typeof v === 'number') && isFinite(v);
+    }
+
+    function numOrDefault(v, def) {
+        return isFiniteNumber(v) ? v : def;
+    }
+
+    // -------------------------------------------------------------- sequence
+
+    function sequence(timeCfg) {
+        if (!timeCfg) {
+            throwCode("MISSING_TIME_CONFIG", "sequence: timeCfg is required");
+        }
+        var mode = timeCfg.mode ? timeCfg.mode : "numeric";
+        if (mode !== "numeric") {
+            throwCode("UNSUPPORTED_TIME_MODE", "sequence: time mode '" + mode + "' is not supported by numericTime");
+        }
+
+        var start = numOrDefault(timeCfg.start, 0);
+        var end = numOrDefault(timeCfg.end, start);
+        var step = numOrDefault(timeCfg.majorStep, 1);
+        if (step <= 0 || !isFinite(step)) {
+            throwCode("INVALID_MAJOR_STEP", "sequence: majorStep must be a positive finite number");
+        }
+        var includeEnd = (timeCfg.includeEndPoint === true);
+        var cyclic = (timeCfg.distributionMode === "cyclic") || (timeCfg.cyclic === true);
+
+        var span = end - start;              // signed; negative = descending
+        var magSpan = Math.abs(span);
+        var descending = span < -EPS;
+
+        if (magSpan < EPS) {
+            // Degenerate domain: single item at the midpoint of the domain.
+            return {
+                cyclic: cyclic,
+                endIncluded: false,
+                count: 1,
+                values: [{ index: 0, t: 0.5, value: start }]
+            };
+        }
+
+        // Divisibility, span-relative epsilon (see file header).
+        var k = magSpan / step;
+        var kr = Math.round(k);
+        var tol = EPS * Math.max(1, magSpan);
+        var divisible = Math.abs(magSpan - kr * step) <= tol;
+
+        var values = [];
+        var count, i, value, t;
+
+        if (cyclic) {
+            if (!divisible) {
+                throwCode("CYCLIC_NOT_DIVISIBLE", "sequence: cyclic requires |end-start| divisible by majorStep");
+            }
+            count = kr + 1; // END-EXCLUSIVE closure: wrap position is not a mark
+            for (i = 0; i < count; i++) {
+                value = descending ? (start - i * step) : (start + i * step);
+                t = i / count;
+                values[values.length] = { index: i, t: t, value: value };
+            }
+            return { cyclic: true, endIncluded: false, count: count, values: values };
+        }
+
+        // Bounded
+        var intervals = divisible ? kr : Math.floor(k);
+        count = intervals + 1;
+        for (i = 0; i < count; i++) {
+            value = descending ? (start - i * step) : (start + i * step);
+            if (divisible) {
+                t = i / intervals; // exact 0..1 endpoints
+            } else {
+                t = (i * step) / magSpan; // value-based, last full step < 1
+            }
+            values[values.length] = { index: i, t: t, value: value };
+        }
+
+        var result = {
+            cyclic: false,
+            endIncluded: false,
+            count: count,
+            values: values
+        };
+
+        if (!divisible && includeEnd) {
+            values[values.length] = {
+                index: count,
+                t: 1,
+                value: end,
+                endIncluded: true
+            };
+            result.count = count + 1;
+            result.endIncluded = true;
+        }
+
+        return result;
+    }
+
+    // ---------------------------------------------------------------- format
+
+    // Rounds the DECIMAL STRING of |value| half-up to p fraction digits.
+    // Works on String(value) (shortest round-trip form) so the user's intent
+    // ("2.005" -> "2.01") survives binary float representation.
+    function roundDecimalString(v, p) {
+        var neg = v < 0;
+        var a = neg ? -v : v;
+        var out;
+
+        if (p === 0) {
+            out = String(Math.round(a));
+            return neg ? ("-" + out) : out;
+        }
+
+        var s = String(a);
+        if (s.indexOf('e') !== -1 || s.indexOf('E') !== -1) {
+            // Exponential form (extreme magnitudes): scale-round fallback.
+            var scale = Math.pow(10, p);
+            out = String(Math.round(a * scale) / scale);
+            return neg ? ("-" + out) : out;
+        }
+
+        var dot = s.indexOf('.');
+        var intPart = (dot === -1) ? s : s.substring(0, dot);
+        var fracPart = (dot === -1) ? "" : s.substring(dot + 1);
+
+        // Need p+1 fraction digits to decide rounding; pad with zeros.
+        var need = p + 1;
+        while (fracPart.length < need) { fracPart += "0"; }
+
+        var roundUp = fracPart.charAt(p) >= '5';
+        var fracDigits = fracPart.substring(0, p);
+        var digits = intPart + fracDigits;
+
+        if (roundUp) {
+            // Manual +1 with carry across the decimal point.
+            var arr = [];
+            var c, ch;
+            for (c = 0; c < digits.length; c++) { arr[arr.length] = digits.charAt(c); }
+            var carry = 1;
+            for (c = arr.length - 1; c >= 0 && carry > 0; c--) {
+                var d = arr[c].charCodeAt(0) - 48 + carry;
+                if (d === 10) { arr[c] = '0'; carry = 1; }
+                else { arr[c] = String.fromCharCode(48 + d); carry = 0; }
+            }
+            digits = "";
+            if (carry > 0) { digits += "1"; }
+            for (c = 0; c < arr.length; c++) { digits += arr[c]; }
+        }
+
+        var split = digits.length - p;
+        var intOut = (split <= 0) ? "0" : digits.substring(0, split);
+        var fracOut = (split <= 0) ? digits : digits.substring(split);
+        while (intOut.length > 1 && intOut.charAt(0) === '0') { intOut = intOut.substring(1); }
+
+        out = intOut + "." + fracOut;
+        return neg ? ("-" + out) : out;
+    }
+
+    function format(value, timeCfg) {
+        if (!isFiniteNumber(value)) {
+            throwCode("INVALID_FORMAT_VALUE", "format: value must be a finite number");
+        }
+        var p = 0;
+        if (timeCfg && isFiniteNumber(timeCfg.precision)) {
+            p = Math.floor(timeCfg.precision);
+            if (p < 0) { p = 0; }
+        }
+        var digits = roundDecimalString(value, p);
+        var prefix = (timeCfg && typeof timeCfg.prefix === 'string') ? timeCfg.prefix : "";
+        var suffix = (timeCfg && typeof timeCfg.suffix === 'string') ? timeCfg.suffix : "";
+        return prefix + digits + suffix;
+    }
+
+    // ---------------------------------------------------------------- helpers
+
+    // Relative position of a value inside the [start, end] domain (0..1),
+    // ascending with index for both ascending and descending domains.
+    // Exposed for the adapter (progress/marker mapping) and internal reuse.
+    function tForValue(value, start, end) {
+        var span = end - start;
+        var mag = Math.abs(span);
+        if (mag < EPS) { return 0.5; }
+        var t = (span >= 0) ? ((value - start) / span) : ((start - value) / mag);
+        return t;
+    }
+
+    var api = {
+        sequence: sequence,
+        format: format,
+        tForValue: tForValue
+    };
+
+    return api;
+})();

@@ -1,0 +1,134 @@
+// ============================================================================
+// TIME RULER — Rig: Marker position bind + CTRL Rotation (ExtendScript ES3)
+// ============================================================================
+// Module: TR.rig.marker / TR.rig.rotation (rotation lives here because spec
+// 9.4 groups marker/sweep/rotation semantics; no separate file in the M5
+// module map).
+// Environment: After Effects 2023+ (ExtendScript ES3). Expression STRINGS
+// come only from TR.ae.expressions (spec 9.6).
+//
+// MARKER POSITION (spec 9.2/9.4): the marker follows the progress position on
+// the ruler path. In rig mode the M3 static marker position value is KEPT as
+// the disabled-expression fallback; the expression overrides it live.
+//   circular/arc: CENTER-RELATIVE parent space — CTRL anchor sits at the
+//                 ruler center, so pos = radius*[cos(a), sin(a)] with
+//                 a = startAngle + dirSign*sweep*Progress/100.
+//   linear:       CTRL anchor sits at the baseline MIDPOINT, so the full
+//                 baseline is mapped through the origin: pos = [dx*k, dy*k],
+//                 k = Progress/100 - 0.5 (baseline vector dx/dy embedded as
+//                 literals; "+x forward" for horizontal-forward rulers is
+//                 preserved and the trajectory matches the M3 static marker
+//                 at every progress value — see expression-builder header).
+//
+// ROTATION RIG: the CTRL's own rotation ("ADBE Rotate Z" — the matchName the
+// M3 shape-builder + mock already use; the task's "ADBE Transform Rotation"
+// is not an AE matchName) carries the Rotation Offset expression. Children
+// (marker/progress/highlight/counter) are parented to CTRL and rotate with
+// it — intended per spec 9.4.
+//
+// MARKER COLOR BIND: the marker dot fill binds to the Marker Color control.
+//
+// ES3 rules: var only, classic loops, try/catch, no ES5 built-ins.
+// ============================================================================
+
+var TR = $.global.TIME_RULER;
+if (typeof TR === 'undefined') { TR = {}; $.global.TIME_RULER = TR; }
+TR.rig = TR.rig || {};
+TR.rig.marker = (function () {
+
+    function safeName(layer) {
+        try { return String(layer.name); } catch (eN) { return ''; }
+    }
+
+    /**
+     * Position expression on the marker layer + Marker Color fill bind.
+     * Returns { applied, expressions }.
+     */
+    function apply(ctx, warnings) {
+        var sb = ctx.sb;
+        var EX = TR.ae.expressions;
+        var layer = ctx.marker;
+        if (!layer) { return { applied: false, expressions: 0 }; }
+        var ctrlName = safeName(ctx.ctrl);
+        var plan = ctx.plan;
+        var expr;
+
+        /* Re-fetch the transform/position references (invalidation rule). */
+        var t = sb.prop(layer, 'ADBE Transform Group');
+        var pos = (t !== null) ? sb.prop(t, 'ADBE Position') : null;
+        if (pos === null && typeof layer.position !== 'undefined') { pos = layer.position; }
+        if (!pos || !EX) {
+            warnings.push('Rig: marker position property not found.');
+            return { applied: false, expressions: 0 };
+        }
+
+        if (plan && plan.type === 'linear') {
+            var b = plan.baseline;
+            expr = EX.progressMarkerExpr({
+                instanceId: ctx.instanceId,
+                ctrlName: ctrlName,
+                linear: true,
+                dx: b.x2 - b.x1,
+                dy: b.y2 - b.y1
+            });
+        } else {
+            var dirSign = (plan && plan.direction === 'counter_clockwise') ? -1 : 1;
+            expr = EX.progressMarkerExpr({
+                instanceId: ctx.instanceId,
+                ctrlName: ctrlName,
+                startAngle: plan ? plan.startAngle : -90,
+                sweep: plan ? plan.sweep : 360,
+                dirSign: dirSign,
+                radius: plan ? plan.radius : 0
+            });
+        }
+        var count = 0;
+        if (EX.applyExpression(pos, expr, warnings, 'marker position bind')) { count++; }
+
+        /* Marker dot fill -> Marker Color control. */
+        var contents = sb.contentsOf(layer);
+        var group = contents ? sb.prop(contents, 'MARKER') : null;
+        var fill = group ? sb.prop(group, 'ADBE Vector Graphic - Fill') : null;
+        var fillColor = fill ? sb.prop(fill, 'ADBE Vector Fill Color') : null;
+        if (fillColor && EX) {
+            if (EX.applyExpression(fillColor,
+                EX.colorBindExpr({ instanceId: ctx.instanceId, ctrlName: ctrlName, effectName: 'Marker Color' }),
+                warnings, 'marker fill color bind')) { count++; }
+        }
+        return { applied: true, expressions: count };
+    }
+
+    return { apply: apply };
+})();
+
+/* ========================================================================== */
+/* TR.rig.rotation — CTRL rotation <- Rotation Offset angle control.          */
+/* ========================================================================== */
+TR.rig.rotation = (function () {
+
+    function safeName(layer) {
+        try { return String(layer.name); } catch (eN) { return ''; }
+    }
+
+    function apply(ctx, warnings) {
+        var sb = ctx.sb;
+        var EX = TR.ae.expressions;
+        var ctrl = ctx.ctrl;
+        if (!ctrl) { return { applied: false, expressions: 0 }; }
+        if (!EX) { return { applied: false, expressions: 0 }; }
+
+        var t = sb.prop(ctrl, 'ADBE Transform Group');
+        var rot = (t !== null) ? sb.prop(t, 'ADBE Rotate Z') : null;
+        if (rot === null && typeof ctrl.rotation !== 'undefined') { rot = ctrl.rotation; }
+        if (!rot) {
+            warnings.push('Rig: CTRL rotation property not found.');
+            return { applied: false, expressions: 0 };
+        }
+        var ok = EX.applyExpression(rot,
+            EX.rotationOffsetExpr({ instanceId: ctx.instanceId, ctrlName: safeName(ctrl) }),
+            warnings, 'CTRL rotation bind');
+        return { applied: ok, expressions: ok ? 1 : 0 };
+    }
+
+    return { apply: apply };
+})();

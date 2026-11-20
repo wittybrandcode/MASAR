@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+; TIME RULER development only: allow unsigned CEP extensions (PlayerDebugMode).
+; AE 2023 ships CEP 11; AE 2024/2025 may ship CEP 12. Both keys are set; harmless.
+; Import by double-clicking, then fully restart After Effects.
+; Do NOT require debug mode for end users of a signed distribution.
+
+[HKEY_CURRENT_USER\Software\Adobe\CSXS.11]
+"PlayerDebugMode"="1"
+
+[HKEY_CURRENT_USER\Software\Adobe\CSXS.12]
+"PlayerDebugMode"="1"

@@ -1,0 +1,272 @@
+/**
+ * TIME RULER - host/core/config.jsxinc
+ *
+ * Configuration schema v1.0: defaults, deep-merge normalization, auto-resolution.
+ *
+ * PURE LOGIC MODULE - must NEVER touch the After Effects DOM (no `app`,
+ * no `app.project`, no AE dialogs). Safe to load under Node.js (ES3 subset).
+ *
+ * Shared contract: field names here must stay byte-for-byte identical to the
+ * client lane schema. The authoritative reference is host/README-BRIDGE.md.
+ *
+ * ExtendScript ES3 rules: `var` only, classic loops, no ES5+ built-ins
+ * (no Object.keys / Array.isArray / map / forEach / trim ...).
+ */
+
+var TR = $.global.TIME_RULER;
+if (typeof TR === "undefined") { TR = {}; $.global.TIME_RULER = TR; }
+
+TR.core = TR.core || {};
+TR.core.config = (function () {
+
+    var SCHEMA_VERSION = "1.0";
+
+    /**
+     * Hard guard-rail limits (spec 11.1). Advisory limits, tunable after profiling.
+     */
+    var LIMITS = {
+        MAJOR_TICKS_MAX: 500,
+        MINOR_MICRO_TOTAL_MAX: 2000,
+        LABELS_WARN: 200,
+        LABELS_MAX: 400,
+        TEETH_MAX: 1000,
+        MAX_PAYLOAD_CHARS: 2000000
+    };
+
+    /**
+     * Fresh deep-default configuration object.
+     * A new literal is built on every call so callers can never share or
+     * mutate a global template object.
+     */
+    function defaults() {
+        return {
+            schemaVersion: "1.0",
+            product: "TIME_RULER",
+            geometry: {
+                type: "circular",
+                centerMode: "compositionCenter",
+                center: [960, 540],
+                radius: 0,
+                startAngle: -90,
+                sweepAngle: 360,
+                direction: "clockwise",
+                distributionMode: "bounded",
+                seamGapDegrees: 6,
+                orientation: "radial",
+                linearOrientation: "horizontal",
+                startX: 0,
+                startY: 0,
+                length: 800,
+                linearDirection: "forward",
+                tickSide: "both",
+                labelOffset: 20
+            },
+            time: {
+                mode: "numeric",
+                start: 2000,
+                end: 2030,
+                majorStep: 1,
+                minorDivisions: 4,
+                microDivisions: 0,
+                includeEndPoint: true,
+                precision: 0,
+                prefix: "",
+                suffix: "",
+                timeZone: "UTC",
+                startDate: "",
+                endDate: "",
+                calendarUnit: "years",
+                dateFormat: "",
+                frameRateMode: "comp",
+                customFps: 25,
+                dropFrame: false
+            },
+            graduations: {
+                major: { enabled: true, length: 22, width: 3, offset: 0, color: "#2878D0", opacity: 100 },
+                minor: { enabled: true, length: 12, width: 2, offset: 0, color: "#75A9E8", opacity: 85 },
+                micro: { enabled: false, length: 6, width: 1, offset: 0, color: "#A9C7EA", opacity: 70 }
+            },
+            baseline: {
+                enabled: true,
+                width: 2,
+                color: "#2878D0"
+            },
+            typography: {
+                enabled: true,
+                fontName: "Arial",
+                fontSize: 30,
+                tracking: 0,
+                color: "#2878D0",
+                orientation: "radial",
+                radiusOffset: 52,
+                precision: 0,
+                collisionMode: "alternate",
+                labelEvery: 1
+            },
+            teeth: {
+                enabled: false,
+                count: 120,
+                shape: "rectangle",
+                width: 3,
+                height: 8,
+                alignment: "outer",
+                rotationOffset: 0,
+                color: "#2878D0",
+                opacity: 100
+            },
+            indicators: {
+                marker: true,
+                progress: false,
+                highlight: false,
+                markerColor: "#FFFFFF",
+                markerSize: 10,
+                highlightColor: "#F2A33C"
+            },
+            output: {
+                mode: "generator",
+                granularity: "grouped",
+                editableTextLayers: true,
+                createMasterController: true
+            },
+            animation: {
+                progress: 0,
+                reveal: 100,
+                rotationOffset: 0,
+                highlightStart: 0,
+                highlightEnd: 100
+            }
+        };
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Helpers                                                             */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Plain object test. Arrays, null, dates and functions are NOT plain objects,
+     * so they are replaced wholesale during merge (contract rule).
+     */
+    function isPlainObject(v) {
+        if (v === null || typeof v !== "object") { return false; }
+        return Object.prototype.toString.call(v) === "[object Object]";
+    }
+
+    function isArray(v) {
+        return Object.prototype.toString.call(v) === "[object Array]";
+    }
+
+    /**
+     * Deep clone for plain objects / arrays; primitives and other types by value.
+     * Prototype chain is NOT copied (own enumerable properties only), which keeps
+     * cross-script prototype pollution out of normalized configs.
+     */
+    function cloneValue(v) {
+        if (isPlainObject(v)) {
+            var o = {};
+            for (var k in v) {
+                if (!Object.prototype.hasOwnProperty.call(v, k)) { continue; }
+                o[k] = cloneValue(v[k]);
+            }
+            return o;
+        }
+        if (isArray(v)) {
+            var a = [];
+            for (var i = 0; i < v.length; i++) {
+                a.push(cloneValue(v[i]));
+            }
+            return a;
+        }
+        return v;
+    }
+
+    /**
+     * Recursive ES3 deep merge: `source` merged over `target` (both treated as
+     * plain objects). Plain objects recurse; arrays and primitives replace the
+     * target value wholesale; keys unknown to `target` are preserved (forward
+     * compatibility with newer client schemas).
+     * Mutates `target` only - `source` is never touched.
+     */
+    function mergeInto(target, source) {
+        if (source === null || typeof source !== "object") { return target; }
+        for (var k in source) {
+            if (!Object.prototype.hasOwnProperty.call(source, k)) { continue; }
+            var sv = source[k];
+            if (isPlainObject(sv)) {
+                var tv = target[k];
+                if (!isPlainObject(tv)) { tv = {}; }
+                target[k] = mergeInto(tv, sv);
+            } else {
+                target[k] = sv;
+            }
+        }
+        return target;
+    }
+
+    /**
+     * Deep-merge a possibly-partial config over fresh defaults.
+     * Returns a NEW object; the input cfg is never mutated.
+     */
+    function normalize(cfg) {
+        var base = defaults();
+        if (cfg === null || cfg === undefined) { return base; }
+        if (!isPlainObject(cfg)) { return base; }
+        return mergeInto(base, cloneValue(cfg));
+    }
+
+    /**
+     * Finite-number coercion used only for composition geometry maths.
+     */
+    function finiteOr(v, fallback) {
+        var n = Number(v);
+        if (typeof n !== "number" || isNaN(n) || !isFinite(n)) { return fallback; }
+        return n;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Auto-resolution                                                     */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Resolve composition-dependent values against compInfo ({width, height, ...}):
+     *   - geometry.centerMode === "compositionCenter" -> center = [w/2, h/2]
+     *   - radius <= 0 (or non-finite)                 -> radius = round(min(w,h) * 0.4)
+     * Returns a NEW config; everything else is left untouched. Pure function.
+     */
+    function resolveAuto(cfg, compInfo) {
+        var out = cloneValue(cfg);
+        if (out === null || typeof out !== "object") { return out; }
+        if (compInfo === null || typeof compInfo !== "object") { return out; }
+
+        var geo = out.geometry;
+        if (!isPlainObject(geo)) { geo = {}; out.geometry = geo; }
+
+        var w = finiteOr(compInfo.width, 0);
+        var h = finiteOr(compInfo.height, 0);
+
+        if (geo.centerMode === "compositionCenter") {
+            geo.center = [Math.round(w / 2), Math.round(h / 2)];
+        }
+
+        var r = geo.radius;
+        if (typeof r !== "number" || isNaN(r) || !isFinite(r) || r <= 0) {
+            var minDim = Math.min(w, h);
+            geo.radius = Math.round(minDim * 0.4);
+        }
+        return out;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Public API                                                          */
+    /* ------------------------------------------------------------------ */
+
+    var api = {
+        schemaVersion: SCHEMA_VERSION,
+        SCHEMA_VERSION: SCHEMA_VERSION,
+        LIMITS: LIMITS,
+        defaults: defaults,
+        normalize: normalize,
+        resolveAuto: resolveAuto
+    };
+
+    return api;
+})();

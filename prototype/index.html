@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIME RULER PRO — Expert Flat Prototype</title>
+    <!-- Google Fonts Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="../client/css/fontawesome/all.min.css">
+    <!-- Masterclass Flat Architecture Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Prototype Version Bar -->
+    <div class="prototype-badge-bar">
+        <span><i class="fa-solid fa-wand-magic-sparkles"></i> نموذج الواجهة المسطحة الخالية من التداخل (Zero-Nested-Boxes & Icon-First)</span>
+        <span class="tag">FLAT v4.0 PRO</span>
+    </div>
+
+    <!-- Header Bar -->
+    <header class="app-header">
+        <div class="app-title-group">
+            <span class="app-logo">TIME <span>RULER</span> PRO</span>
+            <span class="comp-badge">Comp 1</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+            <span><i class="fa-solid fa-layer-group"></i> <span id="header-node-count">5</span> محطات</span>
+        </div>
+    </header>
+
+    <!-- Master Navigation Tabs -->
+    <nav class="main-nav">
+        <button type="button" class="nav-tab active" data-tab="nodes" id="tab-btn-nodes" title="صناديق ومحطات المنابع">
+            <i class="fa-solid fa-cubes"></i>
+            <span>صناديق المنابع</span>
+            <span class="nav-tab-badge" id="badge-node-count">5</span>
+        </button>
+        <button type="button" class="nav-tab" data-tab="controls" id="tab-btn-controls" title="إعدادات المسار والمتحكمات العامة">
+            <i class="fa-solid fa-sliders"></i>
+            <span>المتحكمات العامة</span>
+        </button>
+    </nav>
+
+    <!-- ==================== TAB 1: NODES & SOURCES ==================== -->
+    <div id="view-nodes" class="tab-view active" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;">
+        
+        <!-- Top Horizontal HUD Track (Dual-Axis HUD) -->
+        <div id="hud-horizontal-strip" class="hud-horizontal-strip" title="المسار الزمني الأفقي">
+            <canvas id="timeline-hud-canvas" height="38"></canvas>
+        </div>
+
+        <!-- Sub-Toolbar: All Icon Buttons + Orientation Corner Switch -->
+        <div class="sub-toolbar">
+            <div class="toolbar-group">
+                <!-- 1. Corner Orientation Toggle Button (In place of +, directly aligned with vertical rail) -->
+                <button type="button" class="btn-tool btn-tool--icon" id="btn-hud-corner" title="تبديل اتجاه المسطرة بين عمودي ↕ وأفقي ↔">
+                    <i class="fa-solid fa-arrows-up-down"></i>
+                    <span class="hud-corner-dot"></span>
+                </button>
+
+                <div style="width: 1px; height: 16px; background: var(--border-subtle); margin: 0 1px;"></div>
+
+                <!-- 2. Node Action Buttons (Icons ONLY) -->
+                <button type="button" class="btn-tool btn-tool--primary" id="btn-add-node" title="إضافة عقدة جديدة">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                <button type="button" class="btn-tool" id="btn-import" title="استيراد وتوزيع محتوى العقد دفعة واحدة">
+                    <i class="fa-solid fa-file-import"></i>
+                </button>
+                <button type="button" class="btn-tool" id="btn-reverse" title="قلب ترتيب المحطات (تصاعدي ↔ تنازلي)">
+                    <i class="fa-solid fa-arrows-up-down"></i>
+                </button>
+                <button type="button" class="btn-tool" id="btn-toggle-all" title="طي / توسيع جميع البطاقات">
+                    <i class="fa-solid fa-up-down-left-right"></i>
+                </button>
+
+                <div style="width: 1px; height: 16px; background: var(--border-subtle); margin: 0 1px;"></div>
+
+                <!-- 3. Pattern Action Buttons (Icons ONLY) -->
+                <div class="pattern-chips-group">
+                    <button type="button" class="btn-pattern-icon" data-pattern="num-01" title="ترقيم تسلسلي: 01, 02..">
+                        <i class="fa-solid fa-list-ol"></i>
+                    </button>
+                    <button type="button" class="btn-pattern-icon" data-pattern="years" title="ترقيم سنوي: 2024, 2025..">
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </button>
+                    <button type="button" class="btn-pattern-icon" data-pattern="phases" title="ترقيم مراحل: Phase 1..">
+                        <i class="fa-solid fa-bars-progress"></i>
+                    </button>
+                    <button type="button" class="btn-pattern-icon" data-pattern="clear-num" title="مسح الترقيم التلقائي">
+                        <i class="fa-solid fa-eraser"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="toolbar-group">
+                <span id="hud-orient-label" style="font-size: 10px; color: var(--text-dim); margin-right: 4px;">المسار: عمودي ↕</span>
+            </div>
+        </div>
+
+        <!-- Main Viewport Row: Right Vertical Rail + Left Content Area -->
+        <div class="hud-viewport-row">
+            <!-- Right Vertical Ruler Rail -->
+            <aside id="hud-vertical-rail" class="hud-vertical-rail" title="المسار الزمني الجانبي">
+                <div class="hud-vertical-canvas-wrap">
+                    <canvas id="timeline-hud-vertical-canvas" width="44"></canvas>
+                </div>
+            </aside>
+
+            <!-- Nodes Content Area (Flat cards with ZERO nested boxes) -->
+            <main class="content-area" id="nodes-container">
+                <!-- Dynamically populated prototype items -->
+            </main>
+        </div>
+    </div>
+
+    <!-- ==================== TAB 2: UNIFIED GLOBAL CONTROLS ==================== -->
+    <div id="view-controls" class="tab-view" style="display: none; flex-direction: column; overflow: hidden; flex: 1;">
+        <div class="flat-controls-deck">
+
+            <!-- SECTION 1: المسار والخط الزمني -->
+            <div class="flat-section" id="sec-track">
+                <div class="flat-section-header">
+                    <span><i class="fa-solid fa-route sec-icon"></i> المسار والخط الزمني</span>
+                    <i class="fa-solid fa-chevron-up"></i>
+                </div>
+                <div class="flat-section-body">
+                    <!-- Row 1: All Icon Toggles in One Sleek Row -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-sliders"></i> الأنماط:</span>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <!-- Orientation -->
+                            <div class="icon-seg-group" id="seg-orientation">
+                                <button type="button" class="icon-seg-btn active" data-orientation="vertical" title="مسار عمودي ↕"><i class="fa-solid fa-arrows-up-down"></i></button>
+                                <button type="button" class="icon-seg-btn" data-orientation="horizontal" title="مسار أفقي ↔"><i class="fa-solid fa-arrows-left-right"></i></button>
+                            </div>
+                            <!-- Spacing -->
+                            <div class="icon-seg-group" id="seg-spacing">
+                                <button type="button" class="icon-seg-btn active" data-spacing="auto" title="توزيع تلقائي متساوٍ"><i class="fa-solid fa-expand"></i></button>
+                                <button type="button" class="icon-seg-btn" data-spacing="fixed" title="تباعد مسافي ثابت"><i class="fa-solid fa-ruler"></i></button>
+                            </div>
+                            <!-- Style -->
+                            <div class="icon-seg-group" id="seg-line-style">
+                                <button type="button" class="icon-seg-btn active" data-style="solid" title="خط متصل"><i class="fa-solid fa-minus"></i></button>
+                                <button type="button" class="icon-seg-btn" data-style="dashed" title="خط متقطع"><i class="fa-solid fa-grip-lines"></i></button>
+                                <button type="button" class="icon-seg-btn" data-style="dotted" title="خط منقط"><i class="fa-solid fa-ellipsis"></i></button>
+                            </div>
+                            <!-- Cap -->
+                            <div class="icon-seg-group" id="seg-line-cap">
+                                <button type="button" class="icon-seg-btn" data-cap="butt" title="حافة حادة"><i class="fa-solid fa-square-full" style="font-size: 8px;"></i></button>
+                                <button type="button" class="icon-seg-btn active" data-cap="round" title="حافة دائرية"><i class="fa-solid fa-circle" style="font-size: 8px;"></i></button>
+                                <button type="button" class="icon-seg-btn" data-cap="projecting" title="حافة مربعة"><i class="fa-solid fa-square" style="font-size: 8px;"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Track Length Slider -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-arrows-left-right"></i> طول المسار:</span>
+                        <div class="prop-slider-unit">
+                            <input type="range" class="prop-slider" id="rng-length" min="400" max="4000" step="20" value="1500">
+                            <div class="prop-val-box">
+                                <input type="number" id="inp-length" value="1500">
+                                <span class="unit">px</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Line Width & Color -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-pen-nib"></i> سماكة الخط:</span>
+                        <div class="prop-slider-unit">
+                            <input type="range" class="prop-slider" id="rng-line-w" min="1" max="30" step="1" value="4">
+                            <div class="prop-val-box">
+                                <input type="number" id="inp-line-w" value="4">
+                                <span class="unit">px</span>
+                            </div>
+                            <div class="micro-color-swatch" id="wrap-line-color" style="background: #ffffff;" title="لون خط المسطرة">
+                                <input type="color" id="inp-line-color" value="#ffffff">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Terminals (Start & End - Icons ONLY!) -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-arrow-right-arrow-left"></i> الأطراف:</span>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="icon-seg-group" id="seg-start-terminal" title="طرف البداية">
+                                <button type="button" class="icon-seg-btn active" data-term="none" title="بدون"><i class="fa-solid fa-ban"></i></button>
+                                <button type="button" class="icon-seg-btn" data-term="arrow" title="سهم"><i class="fa-solid fa-caret-left"></i></button>
+                                <button type="button" class="icon-seg-btn" data-term="dot" title="نقطة"><i class="fa-solid fa-circle" style="font-size: 8px;"></i></button>
+                                <button type="button" class="icon-seg-btn" data-term="bar" title="سن"><i class="fa-solid fa-grip-lines-vertical"></i></button>
+                            </div>
+                            <div class="icon-seg-group" id="seg-end-terminal" title="طرف النهاية">
+                                <button type="button" class="icon-seg-btn active" data-term="none" title="بدون"><i class="fa-solid fa-ban"></i></button>
+                                <button type="button" class="icon-seg-btn" data-term="arrow" title="سهم"><i class="fa-solid fa-caret-right"></i></button>
+                                <button type="button" class="icon-seg-btn" data-term="dot" title="نقطة"><i class="fa-solid fa-circle" style="font-size: 8px;"></i></button>
+                                <button type="button" class="icon-seg-btn" data-term="bar" title="سن"><i class="fa-solid fa-grip-lines-vertical"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 5: Palette Swatches (Swatches ONLY!) -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-palette"></i> الباليتات:</span>
+                        <div class="palette-swatches-strip">
+                            <div class="palette-btn-mini" data-palette="cyber" style="background: #00f0ff;" title="Cyber Cyan"></div>
+                            <div class="palette-btn-mini" data-palette="gold" style="background: #f59e0b;" title="Luxury Gold"></div>
+                            <div class="palette-btn-mini" data-palette="tech" style="background: #38bdf8;" title="Tech Blue"></div>
+                            <div class="palette-btn-mini" data-palette="emerald" style="background: #10b981;" title="Emerald Growth"></div>
+                            <div class="palette-btn-mini" data-palette="minimal" style="background: #ffffff;" title="Monochrome Minimal"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: العقدة والأشكال -->
+            <div class="flat-section" id="sec-marker">
+                <div class="flat-section-header">
+                    <span><i class="fa-solid fa-shapes sec-icon"></i> العقدة والأشكال المتجهة</span>
+                    <i class="fa-solid fa-chevron-up"></i>
+                </div>
+                <div class="flat-section-body">
+                    <!-- Row 1: Shape Picker Trigger -->
+                    <div class="flat-shape-trigger" id="btn-global-shape-trigger" title="فتح مكتبة أشكال العقد والـ SVG">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="micro-color-swatch" id="thumb-global-shape" style="background: #10b981; width: 22px; height: 22px;">
+                                <i class="fa-solid fa-circle" style="color: #fff; font-size: 11px;"></i>
+                            </span>
+                            <span id="txt-global-shape-name" style="font-weight: 700; color: #ffffff;">دائرة مصمتة</span>
+                        </div>
+                        <button type="button" class="btn-tool" title="استعراض الأشكال">
+                            <i class="fa-solid fa-shapes"></i>
+                        </button>
+                    </div>
+
+                    <!-- Row 2: Marker Size & Fill Color -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-circle"></i> حجم العقدة:</span>
+                        <div class="prop-slider-unit">
+                            <input type="range" class="prop-slider" id="rng-circ-r" min="4" max="40" step="1" value="11">
+                            <div class="prop-val-box">
+                                <input type="number" id="inp-circ-r" value="11">
+                                <span class="unit">px</span>
+                            </div>
+                            <div class="micro-color-swatch" id="wrap-circ-fill" style="background: #10b981;" title="لون تعبئة العقدة">
+                                <input type="color" id="inp-circ-fill" value="#10b981">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Marker Stroke Width & Color -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-circle-dot"></i> إطار العقدة:</span>
+                        <div class="prop-slider-unit">
+                            <input type="range" class="prop-slider" id="rng-circ-sw" min="0" max="15" step="1" value="3">
+                            <div class="prop-val-box">
+                                <input type="number" id="inp-circ-sw" value="3">
+                                <span class="unit">px</span>
+                            </div>
+                            <div class="micro-color-swatch" id="wrap-circ-stroke" style="background: #ffffff;" title="لون إطار العقدة">
+                                <input type="color" id="inp-circ-stroke" value="#ffffff">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Inner Number Font Size & Color -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-hashtag"></i> الرقم الداخلي:</span>
+                        <div class="prop-slider-unit">
+                            <input type="range" class="prop-slider" id="rng-num-size" min="10" max="40" step="1" value="20">
+                            <div class="prop-val-box">
+                                <input type="number" id="inp-num-size" value="20">
+                                <span class="unit">pt</span>
+                            </div>
+                            <div class="micro-color-swatch" id="wrap-num-color" style="background: #059669;" title="لون رقم العقدة الداخلي">
+                                <input type="color" id="inp-num-color" value="#059669">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: النصوص والإزاحات والقوالب -->
+            <div class="flat-section" id="sec-typo">
+                <div class="flat-section-header">
+                    <span><i class="fa-solid fa-font sec-icon"></i> النصوص والإزاحات والقوالب</span>
+                    <i class="fa-solid fa-chevron-up"></i>
+                </div>
+                <div class="flat-section-body">
+                    <!-- Row 1: Title Font Size & Color -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-heading"></i> خط العنوان:</span>
+                        <div class="prop-slider-unit">
+                            <input type="range" class="prop-slider" id="rng-title-size" min="12" max="60" step="1" value="22">
+                            <div class="prop-val-box">
+                                <input type="number" id="inp-title-size" value="22">
+                                <span class="unit">pt</span>
+                            </div>
+                            <div class="micro-color-swatch" id="wrap-title-color" style="background: #ffffff;" title="لون خط العنوان">
+                                <input type="color" id="inp-title-color" value="#ffffff">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Content Font Size & Color -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-align-right"></i> خط الشرح:</span>
+                        <div class="prop-slider-unit">
+                            <input type="range" class="prop-slider" id="rng-desc-size" min="9" max="36" step="1" value="13">
+                            <div class="prop-val-box">
+                                <input type="number" id="inp-desc-size" value="13">
+                                <span class="unit">pt</span>
+                            </div>
+                            <div class="micro-color-swatch" id="wrap-desc-color" style="background: #cbd5e1;" title="لون خط الشرح">
+                                <input type="color" id="inp-desc-color" value="#cbd5e1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Placement & Text Alignment (Icons ONLY) -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-arrows-left-right-to-line"></i> التموضع:</span>
+                        <div style="display: flex; gap: 8px;">
+                            <div class="icon-seg-group" id="seg-content-side" title="جهة تموضع المحتوى">
+                                <button type="button" class="icon-seg-btn active" data-side="left" title="يسار / أعلى"><i class="fa-solid fa-arrow-left"></i></button>
+                                <button type="button" class="icon-seg-btn" data-side="alternate" title="تناوب متعرج"><i class="fa-solid fa-shuffle"></i></button>
+                                <button type="button" class="icon-seg-btn" data-side="right" title="يمين / أسفل"><i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                            <div class="icon-seg-group" id="seg-text-align" title="محاذاة النص">
+                                <button type="button" class="icon-seg-btn active" data-align="auto" title="محاذاة تلقائية ذكية"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                                <button type="button" class="icon-seg-btn" data-align="right" title="محاذاة لليمين"><i class="fa-solid fa-align-right"></i></button>
+                                <button type="button" class="icon-seg-btn" data-align="center" title="توسيط"><i class="fa-solid fa-align-center"></i></button>
+                                <button type="button" class="icon-seg-btn" data-align="left" title="محاذاة لليسار"><i class="fa-solid fa-align-left"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Clearance Offsets -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-arrows-up-down"></i> الإزاحات:</span>
+                        <div style="display: flex; gap: 8px; flex: 1;">
+                            <div class="prop-slider-unit">
+                                <i class="fa-solid fa-arrow-up" style="font-size: 10px; color: var(--text-dim);" title="إزاحة لأعلى"></i>
+                                <input type="range" class="prop-slider" id="rng-top-offset" min="5" max="100" step="2" value="26">
+                                <div class="prop-val-box"><input type="number" id="inp-top-offset" value="26"><span class="unit">px</span></div>
+                            </div>
+                            <div class="prop-slider-unit">
+                                <i class="fa-solid fa-arrow-down" style="font-size: 10px; color: var(--text-dim);" title="إزاحة لأسفل"></i>
+                                <input type="range" class="prop-slider" id="rng-bot-offset" min="5" max="100" step="2" value="26">
+                                <div class="prop-val-box"><input type="number" id="inp-bot-offset" value="26"><span class="unit">px</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 5: Presets (Icons ONLY) -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-wand-magic-sparkles"></i> القوالب:</span>
+                        <div class="presets-icons-strip">
+                            <button type="button" class="preset-chip-icon" data-preset="roadmap" title="خارطة منتج Roadmap: محطات إطلاق وتمويل ريادي"><i class="fa-solid fa-rocket" style="color: #38bdf8;"></i></button>
+                            <button type="button" class="preset-chip-icon" data-preset="pipeline" title="خط إنتاج Pipeline: مراحل إنتاج الفيديو حتى تصدير 4K"><i class="fa-solid fa-film" style="color: #f59e0b;"></i></button>
+                            <button type="button" class="preset-chip-icon" data-preset="history" title="سجل محطات History: متسلسلة بدبابيس مواقع خضراء"><i class="fa-solid fa-clock-rotate-left" style="color: #10b981;"></i></button>
+                            <button type="button" class="preset-chip-icon" data-preset="cyber" title="مسار تقني Cyber: خط متوهج وأقواس تقنية"><i class="fa-solid fa-crosshairs" style="color: #ec4899;"></i></button>
+                            <button type="button" class="preset-chip-icon" data-preset="minimal" title="مينيمال سينمائي Minimal: حلقات مفرغة بطابع فائق البساطة"><i class="fa-solid fa-circle-notch" style="color: #cbd5e1;"></i></button>
+                            <button type="button" class="preset-chip-icon" data-preset="corporate_en" title="Sprint EN: Agile milestones & corporate sprint"><i class="fa-solid fa-flag-usa" style="color: #60a5fa;"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: صناديق وبطاقات النصوص -->
+            <div class="flat-section" id="sec-boxes">
+                <div class="flat-section-header">
+                    <span><i class="fa-solid fa-square sec-icon"></i> صناديق وبطاقات النصوص (Text Boxes)</span>
+                    <i class="fa-solid fa-chevron-up"></i>
+                </div>
+                <div class="flat-section-body">
+                    <!-- Row 1: Master Mode (Icons ONLY) -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-regular fa-square"></i> النمط العام:</span>
+                        <div class="icon-seg-group" id="seg-box-mode" style="width: auto;">
+                            <button type="button" class="icon-seg-btn active" data-box-mode="off" title="بدون صناديق (نصوص حرة بدون خلفية)"><i class="fa-solid fa-ban"></i></button>
+                            <button type="button" class="icon-seg-btn" data-box-mode="glass" title="صناديق زجاجية شفافة (Glass Cards)"><i class="fa-regular fa-clone"></i></button>
+                            <button type="button" class="icon-seg-btn" data-box-mode="solid" title="صناديق صلبة واضحة (Solid Cards)"><i class="fa-solid fa-square"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Title Box Settings -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-heading"></i> ص.العنوان:</span>
+                        <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
+                            <div class="prop-slider-unit">
+                                <input type="range" class="prop-slider" id="rng-title-box-fill-op" min="0" max="100" step="5" value="85" title="الشفافية">
+                                <div class="prop-val-box"><input type="number" id="inp-title-box-fill-op" value="85"><span class="unit">%</span></div>
+                                <div class="micro-color-swatch" id="wrap-title-box-fill-color" style="background: #0b1120;" title="لون التعبئة"><input type="color" id="inp-title-box-fill-color" value="#0b1120"></div>
+                            </div>
+                            <div class="prop-slider-unit">
+                                <input type="range" class="prop-slider" id="rng-title-box-radius" min="0" max="30" step="1" value="6" title="تدوير الزوايا">
+                                <div class="prop-val-box"><input type="number" id="inp-title-box-radius" value="6"><span class="unit">R</span></div>
+                                <div class="micro-color-swatch" id="wrap-title-box-stroke-color" style="background: #10b981;" title="لون الإطار"><input type="color" id="inp-title-box-stroke-color" value="#10b981"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Desc Box Settings -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-align-right"></i> ص.الشرح:</span>
+                        <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
+                            <div class="prop-slider-unit">
+                                <input type="range" class="prop-slider" id="rng-desc-box-fill-op" min="0" max="100" step="5" value="85" title="الشفافية">
+                                <div class="prop-val-box"><input type="number" id="inp-desc-box-fill-op" value="85"><span class="unit">%</span></div>
+                                <div class="micro-color-swatch" id="wrap-desc-box-fill-color" style="background: #0b1120;" title="لون التعبئة"><input type="color" id="inp-desc-box-fill-color" value="#0b1120"></div>
+                            </div>
+                            <div class="prop-slider-unit">
+                                <input type="range" class="prop-slider" id="rng-desc-box-radius" min="0" max="30" step="1" value="6" title="تدوير الزوايا">
+                                <div class="prop-val-box"><input type="number" id="inp-desc-box-radius" value="6"><span class="unit">R</span></div>
+                                <div class="micro-color-swatch" id="wrap-desc-box-stroke-color" style="background: #64748b;" title="لون الإطار"><input type="color" id="inp-desc-box-stroke-color" value="#64748b"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Behind Box Settings -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-arrow-down-long"></i> ص.الخلفي:</span>
+                        <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
+                            <div class="prop-slider-unit">
+                                <input type="range" class="prop-slider" id="rng-behind-box-fill-op" min="0" max="100" step="5" value="85" title="الشفافية">
+                                <div class="prop-val-box"><input type="number" id="inp-behind-box-fill-op" value="85"><span class="unit">%</span></div>
+                                <div class="micro-color-swatch" id="wrap-behind-box-fill-color" style="background: #1a1408;" title="لون التعبئة"><input type="color" id="inp-behind-box-fill-color" value="#1a1408"></div>
+                            </div>
+                            <div class="prop-slider-unit">
+                                <input type="range" class="prop-slider" id="rng-behind-box-radius" min="0" max="30" step="1" value="6" title="تدوير الزوايا">
+                                <div class="prop-val-box"><input type="number" id="inp-behind-box-radius" value="6"><span class="unit">R</span></div>
+                                <div class="micro-color-swatch" id="wrap-behind-box-stroke-color" style="background: #f59e0b;" title="لون الإطار"><input type="color" id="inp-behind-box-stroke-color" value="#f59e0b"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 5: Padding (H & V) -->
+                    <div class="prop-row">
+                        <span class="prop-lbl"><i class="fa-solid fa-expand"></i> الحشوة:</span>
+                        <div style="display: flex; gap: 8px; flex: 1;">
+                            <div class="prop-slider-unit">
+                                <i class="fa-solid fa-arrows-left-right" style="font-size: 10px; color: var(--text-dim);" title="حشوة أفقية"></i>
+                                <input type="range" class="prop-slider" id="rng-box-padding-h" min="4" max="40" step="1" value="14">
+                                <div class="prop-val-box"><input type="number" id="inp-box-padding-h" value="14"><span class="unit">px</span></div>
+                            </div>
+                            <div class="prop-slider-unit">
+                                <i class="fa-solid fa-arrows-up-down" style="font-size: 10px; color: var(--text-dim);" title="حشوة رأسية"></i>
+                                <input type="range" class="prop-slider" id="rng-box-padding-v" min="2" max="30" step="1" value="6">
+                                <div class="prop-val-box"><input type="number" id="inp-box-padding-v" value="6"><span class="unit">px</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: تصدير MOGRT و Premiere -->
+            <div class="flat-section collapsed" id="sec-mogrt">
+                <div class="flat-section-header">
+                    <span><i class="fa-solid fa-file-export sec-icon" style="color: #f59e0b;"></i> تصدير القوالب التفاعلية (MOGRT & Premiere)</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="flat-section-body">
+                    <p style="font-size: 10.5px; color: var(--text-muted); line-height: 1.4;">
+                        ربط خصائص المخطط الزمني بلوحة Essential Graphics وتصدير قالب جاهز للتحرير المباشر داخل Premiere Pro.
+                    </p>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" class="btn-tool" style="width: auto; padding: 0 10px; gap: 5px; flex: 1;" title="ربط Essential Graphics">
+                            <i class="fa-solid fa-sliders"></i>
+                            <span>ربط Essential Graphics</span>
+                        </button>
+                        <button type="button" class="btn-tool btn-tool--primary" style="width: auto; padding: 0 10px; gap: 5px; flex: 1;" title="تصدير MOGRT لـ Premiere">
+                            <i class="fa-solid fa-file-export"></i>
+                            <span>تصدير MOGRT</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Sticky Footer Bar: 100% Icon Buttons with Tooltips -->
+    <footer class="app-footer">
+        <div class="footer-status">
+            <span class="dot"></span>
+            <span id="footer-status-text">متصل بـ After Effects (Comp 1 • 5 عقد)</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <button type="button" id="btn-live-sync" class="live-pill active" title="المزامنة الفورية المباشرة مع After Effects">
+                <span class="live-dot"></span>
+                <i class="fa-solid fa-bolt-lightning"></i>
+            </button>
+            <button type="button" class="btn-tool" id="btn-refresh" title="إعادة بناء وتوسيط المسطرة">
+                <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+            <button type="button" class="btn-tool btn-tool--primary" id="btn-apply-ae" title="تطبيق وتحديث المسطرة في After Effects">
+                <i class="fa-solid fa-bolt"></i>
+            </button>
+        </div>
+    </footer>
+
+    <!-- MODAL 1: Batch Text & Outline Importer -->
+    <div id="modal-batch-import" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-head">
+                <div class="modal-title">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span>استيراد وتوزيع نصوص المحطات</span>
+                </div>
+                <button type="button" class="modal-close-btn" id="btn-close-batch-modal" title="إغلاق">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body-deck">
+                <div style="font-size: 10px; color: var(--text-muted); line-height: 1.4;">
+                    الصق خطة العمل (كل سطر عقدة، أو افصل بين الرقم والعنوان والشرح بالرمز <code>|</code>):
+                </div>
+                <textarea id="txt-batch-import" style="width: 100%; height: 110px; background: var(--bg-input); border: 1px solid var(--border-card); color: #fff; font-size: 10.5px; padding: 6px; outline: none; resize: vertical;" placeholder="01 | أبحاث السوق والـ MVP | دراسة متطلبات العملاء
+02 | إطلاق النسخة التجريبية | فتح الوصول لأول 5,000 مستخدم
+03 | جولة التمويل الأولى | إغلاق الجولة التمويلية بنجاح
+04 | التوسع الإقليمي | افتتاح المكاتب الإقليمية الجديدة
+05 | الريادة التقنية | تحقيق النمو والاستدامة"></textarea>
+                <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px;">
+                    <button type="button" class="btn-tool" id="btn-cancel-batch-modal" style="width: auto; padding: 0 10px;" title="إلغاء">إلغاء</button>
+                    <button type="button" class="btn-tool btn-tool--primary" id="btn-apply-batch-import" style="width: auto; padding: 0 12px; gap: 4px;" title="تطبيق">
+                        <i class="fa-solid fa-check"></i>
+                        <span>تطبيق</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: مكتبة أشكال العقد والـ SVG -->
+    <div id="modal-node-shapes" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-head">
+                <div class="modal-title">
+                    <i class="fa-solid fa-shapes"></i>
+                    <span>مكتبة أشكال وإمكانيات العقدة</span>
+                </div>
+                <button type="button" class="modal-close-btn" id="btn-close-shapes-modal" title="إغلاق">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body-deck">
+                <div style="font-size: 10px; color: var(--text-muted);">اختر الشكل المتجهي الأساسي للعقد:</div>
+                <div class="modal-shapes-grid" id="grid-global-shapes">
+                    <!-- Dynamically populated -->
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-subtle); padding-top: 8px; margin-top: 4px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span id="modal-preview-shape-thumb" class="micro-color-swatch" style="background: #10b981; width: 22px; height: 22px;"></span>
+                        <span id="modal-preview-shape-name" style="font-weight: 700; color: var(--accent-light); font-size: 11px;">دائرة مصمتة</span>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" class="btn-tool" id="btn-cancel-shapes-modal" style="width: auto; padding: 0 10px;" title="إلغاء">إلغاء</button>
+                        <button type="button" class="btn-tool btn-tool--primary" id="btn-accept-shapes-modal" style="width: auto; padding: 0 12px; gap: 4px;" title="تأكيد">
+                            <i class="fa-solid fa-check"></i>
+                            <span>تأكيد</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prototype Controller Script -->
+    <script src="app.js"></script>
+</body>
+</html>

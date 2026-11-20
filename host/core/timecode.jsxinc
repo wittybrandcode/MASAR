@@ -1,0 +1,299 @@
+// ============================================================================
+// TIME RULER — Core Timecode Engine (ExtendScript ES3, pure math)
+// ============================================================================
+// Module: TR.core.timecode
+// Environment: After Effects 2023+ (ExtendScript ES3) AND Node 22 (test harness).
+// PURE MATH ONLY: no `app`, no DOM, no alert, no #include, no AE APIs.
+//
+// resolveFps(timeCfg, compInfo) ->
+//   { fps, num, den, nominal, dropFrameAllowed }
+//
+//   frameRateMode "comp"   -> compInfo.frameRate (guard: missing compInfo /
+//                             non-positive fps -> FPS_UNAVAILABLE).
+//   frameRateMode "custom" -> timeCfg.customFps (> 0 else TC_FPS_INVALID).
+//   anything else          -> ENUM_FPS_MODE (same code as validation).
+//
+//   Rational mapping (v1 policy):
+//     23.976 / 29.97 / 59.94 (and the exact double forms 24000/1001,
+//     30000/1001, 60000/1001, within 1e-3) -> 24000|30000|60000 over 1001.
+//     Integer fps (24/25/30/50/60, any integral value >= 1) -> n/1.
+//     Any OTHER decimal -> round(fps*1000)/1000 approximation (documented
+//     v1 limitation; e.g. 29.98 -> 29980/1000, slightly off).
+//   nominal = round(num/den) (24 / 25 / 30 / 60 ...).
+//   dropFrameAllowed = (den === 1001) && (num === 30000 || num === 60000).
+//   Drop-frame applies ONLY to the 29.97 and 59.94 families; 23.976
+//   (24000/1001) is NOT drop-frame per spec 2.4.
+//
+// sequence(timeCfg, compInfo) ->
+//   { cyclic: false, endIncluded, count, fps, num, den, nominal, dropFrame,
+//     values:[{ index, t, seconds, frame, label }] }
+//
+//   mode "timecode" only. Domain = seconds (timeCfg.start .. timeCfg.end,
+//   end !== start else TIME_RANGE_EMPTY; descending supported like
+//   numeric-time: values descend, t still ascends 0..1).
+//   majorStep = seconds per major tick (> 0 else INVALID_MAJOR_STEP;
+//   validation enforces ranges upstream).
+//   frame = Math.round(seconds * num/den) per item; label = timecodeString
+//   of that frame. t = (seconds-start)/(end-start), real value-based
+//   position (mirrors numeric-time, incl. the span-relative epsilon
+//   divisibility test and the includeEndPoint end-item append with t = 1).
+//   cyclic is always false: this engine supplies the bounded domain; ring
+//   cyclic distribution is the adapter/geometry lane's decision.
+//   Minor/micro sub-positions are NOT produced here — the adapter
+//   derives them from minorDivisions and frame-quantizes them later.
+//   dropFrame (result) = timeCfg.dropFrame === true && dropFrameAllowed;
+//   requesting drop at 25fps degrades silently to non-drop (no crash).
+//   v1: negative start seconds yield frame numbers that clamp to
+//   00:00:00:00 — timecode is only meaningful for start >= 0.
+//
+// timecodeString(frame, num, den, drop) -> "HH:MM:SS(:|;)FF"
+//
+//   NON-DROP: nominal = round(num/den); HH:MM:SS:FF with FF = frame % nominal,
+//   nominal frame counting (frame = totalFrames).
+//   DROP (only 29.97/59.94 families; anything else silently falls back to
+//   non-drop): textbook SMPTE drop-frame algorithm — per-minute groups of
+//   1798 (29.97) / 3596 (59.94) real frames, blocks of 17982 / 35964 frames
+//   per 10 minutes, first 2 (or 4) frame numbers dropped at every minute
+//   except every 10th. Separator ";" before FF only.
+//
+//   Reference pairs verified:
+//     29.97DF  0 -> "00:00:00;00"   1800 -> "00:01:00;02"
+//              17982 -> "00:10:00;00"   (2 dropped/minute, none at :10)
+//     29.97ND  1800 -> "00:01:00:00"
+//     59.94DF  3600 -> "00:01:00;04"  35964 -> "00:10:00:00" ... non-drop
+//              separator; 4 dropped/minute, none at :10.
+//     NOTE (task-vector correction): the build task lists "59.94DF frame
+//     1800 -> 00:01:00;04", but at 60 nominal fps frame 1800 is 30 s into
+//     minute 0 (no drop region) -> "00:00:30;00". The published pair is
+//     frame 3600 -> "00:01:00;04"; tests assert both (see
+//     tests/timecode-cases.json notes).
+//
+// frameFromSeconds(seconds, num, den) -> integer frame (Math.round).
+// formatFrames(frame, num, den, drop) -> timecodeString alias (adapter shim).
+// ES3 integer math only; floats appear solely as seconds*num/den multiplies.
+// ============================================================================
+
+var TR = $.global.TIME_RULER;
+if (typeof TR === 'undefined') { TR = {}; $.global.TIME_RULER = TR; }
+TR.core = TR.core || {};
+TR.core.timecode = (function () {
+
+    var EPS = 1e-9;
+    var FPS_NEAR_TOL = 1e-3; // matches 23.976-style decimals to their rationals
+
+    function throwCode(code, message) {
+        var e = new Error(message || code);
+        e.code = code;
+        e.trError = true;
+        throw e;
+    }
+
+    function isFiniteNumber(v) {
+        return (typeof v === 'number') && isFinite(v);
+    }
+
+    function numOrDefault(v, def) {
+        return isFiniteNumber(v) ? v : def;
+    }
+
+    function pad2(n) {
+        if (n < 10) { return "0" + n; }
+        return "" + n;
+    }
+
+    // ------------------------------------------------------------ rational
+
+    var RATIONALS = [
+        { dec: 23.976, num: 24000, den: 1001 },
+        { dec: 29.97, num: 30000, den: 1001 },
+        { dec: 59.94, num: 60000, den: 1001 }
+    ];
+
+    // fps -> {num, den}: NTSC-style decimals to their exact rationals,
+    // integral fps to n/1, anything else to the /1000 approximation.
+    function mapToRational(fps) {
+        var i, r;
+        for (i = 0; i < RATIONALS.length; i++) {
+            r = RATIONALS[i];
+            if (Math.abs(fps - r.dec) <= FPS_NEAR_TOL || Math.abs(fps - r.num / r.den) <= FPS_NEAR_TOL) {
+                return { num: r.num, den: r.den };
+            }
+        }
+        var n = Math.round(fps);
+        if (Math.abs(fps - n) <= EPS) {
+            return { num: n, den: 1 };
+        }
+        return { num: Math.round(fps * 1000), den: 1000 };
+    }
+
+    function resolveFps(timeCfg, compInfo) {
+        if (!timeCfg) {
+            throwCode("MISSING_TIME_CONFIG", "resolveFps: timeCfg is required");
+        }
+        var mode = timeCfg.frameRateMode ? timeCfg.frameRateMode : "comp";
+        var fps;
+        if (mode === "comp") {
+            if (!compInfo || !isFiniteNumber(compInfo.frameRate) || compInfo.frameRate <= 0) {
+                throwCode("FPS_UNAVAILABLE", "resolveFps: frameRateMode 'comp' requires compInfo.frameRate > 0");
+            }
+            fps = compInfo.frameRate;
+        } else if (mode === "custom") {
+            if (!isFiniteNumber(timeCfg.customFps) || timeCfg.customFps <= 0) {
+                throwCode("TC_FPS_INVALID", "resolveFps: customFps must be a positive finite number");
+            }
+            fps = timeCfg.customFps;
+        } else {
+            throwCode("ENUM_FPS_MODE", "resolveFps: unknown frameRateMode '" + mode + "'");
+        }
+        var rat = mapToRational(fps);
+        return {
+            fps: rat.num / rat.den,
+            num: rat.num,
+            den: rat.den,
+            nominal: Math.round(rat.num / rat.den),
+            dropFrameAllowed: (rat.den === 1001) && (rat.num === 30000 || rat.num === 60000)
+        };
+    }
+
+    // -------------------------------------------------------- timecode text
+
+    function timecodeString(frame, num, den, drop) {
+        if (!isFiniteNumber(frame) || !isFiniteNumber(num) || !isFiniteNumber(den) || den <= 0 || num <= 0) {
+            throwCode("TC_FPS_INVALID", "timecodeString: frame/num/den must be finite and positive");
+        }
+        var f = Math.round(frame);
+        if (f < 0) { f = 0; } // clamp: v1 timecode only meaningful for f >= 0
+        var nominal = Math.round(num / den);
+        var dropOn = (drop === true) && (den === 1001) && (num === 30000 || num === 60000);
+        var hh, mi, ss, ff;
+
+        if (dropOn) {
+            var fpsNominal = (num === 60000) ? 60 : 30;
+            var dropPerMin = (fpsNominal === 60) ? 4 : 2;
+            var fpm = fpsNominal * 60;                       // 1800 / 3600
+            var fp10m = fpm * 10 - 9 * dropPerMin;           // 17982 / 35964
+            var d = Math.floor(f / fp10m);
+            var m = f - d * fp10m;                           // within 10-min block
+            var tcMin, tcFrame;
+            if (m < fpm) {
+                tcMin = 0;                                   // minute 0: no drops
+                tcFrame = m;
+            } else {
+                var rest = m - fpm;
+                tcMin = Math.floor(rest / (fpm - dropPerMin)) + 1;
+                tcFrame = (rest % (fpm - dropPerMin)) + dropPerMin;
+            }
+            var totalMin = d * 10 + tcMin;
+            hh = Math.floor(totalMin / 60);
+            mi = totalMin - hh * 60;
+            ss = Math.floor(tcFrame / fpsNominal);
+            ff = tcFrame - ss * fpsNominal;
+        } else {
+            var totalSec = Math.floor(f / nominal);
+            ff = f - totalSec * nominal;
+            hh = Math.floor(totalSec / 3600);
+            var remSec = totalSec - hh * 3600;
+            mi = Math.floor(remSec / 60);
+            ss = remSec - mi * 60;
+        }
+        return pad2(hh) + ":" + pad2(mi) + ":" + pad2(ss) + (dropOn ? ";" : ":") + pad2(ff);
+    }
+
+    function frameFromSeconds(seconds, num, den) {
+        if (!isFiniteNumber(seconds) || !isFiniteNumber(num) || !isFiniteNumber(den) || num <= 0 || den <= 0) {
+            throwCode("TC_FPS_INVALID", "frameFromSeconds: seconds must be finite and num/den a positive rational");
+        }
+        return Math.round(seconds * num / den);
+    }
+
+    // Alias kept for the adapter: same signature as timecodeString.
+    function formatFrames(frame, num, den, drop) {
+        return timecodeString(frame, num, den, drop);
+    }
+
+    // ------------------------------------------------------------- sequence
+
+    function sequence(timeCfg, compInfo) {
+        if (!timeCfg) {
+            throwCode("MISSING_TIME_CONFIG", "sequence: timeCfg is required");
+        }
+        var mode = timeCfg.mode ? timeCfg.mode : "timecode";
+        if (mode !== "timecode") {
+            throwCode("UNSUPPORTED_TIME_MODE", "sequence: time mode '" + mode + "' is not supported by timecode");
+        }
+
+        var fpsInfo = resolveFps(timeCfg, compInfo); // coded errors propagate
+
+        var start = numOrDefault(timeCfg.start, 0);
+        var end = numOrDefault(timeCfg.end, start);
+        var step = numOrDefault(timeCfg.majorStep, 1);
+        if (!(step > 0) || !isFinite(step)) {
+            throwCode("INVALID_MAJOR_STEP", "sequence: majorStep must be a positive finite number");
+        }
+        var span = end - start; // signed; descending supported
+        if (Math.abs(span) <= EPS) {
+            throwCode("TIME_RANGE_EMPTY", "sequence: time.start and time.end must differ");
+        }
+        var magSpan = Math.abs(span);
+        var descending = span < -EPS;
+        var includeEnd = (timeCfg.includeEndPoint === true);
+        var drop = (timeCfg.dropFrame === true) && fpsInfo.dropFrameAllowed;
+
+        // Divisibility, span-relative epsilon (same policy as numeric-time).
+        var k = magSpan / step;
+        var kr = Math.round(k);
+        var tol = EPS * Math.max(1, magSpan);
+        var divisible = Math.abs(magSpan - kr * step) <= tol;
+
+        var intervals = divisible ? kr : Math.floor(k);
+        var count = intervals + 1;
+        var values = [];
+        var i, seconds, t, frame;
+
+        for (i = 0; i < count; i++) {
+            seconds = descending ? (start - i * step) : (start + i * step);
+            t = divisible ? (i / intervals) : ((i * step) / magSpan);
+            frame = Math.round(seconds * fpsInfo.num / fpsInfo.den);
+            values[values.length] = {
+                index: i, t: t, seconds: seconds, frame: frame,
+                label: timecodeString(frame, fpsInfo.num, fpsInfo.den, drop)
+            };
+        }
+
+        var result = {
+            cyclic: false,
+            endIncluded: false, // true only when the end item is appended
+            count: count,
+            fps: fpsInfo.fps,
+            num: fpsInfo.num,
+            den: fpsInfo.den,
+            nominal: fpsInfo.nominal,
+            dropFrame: drop,
+            values: values
+        };
+
+        if (!divisible && includeEnd) {
+            frame = Math.round(end * fpsInfo.num / fpsInfo.den);
+            values[values.length] = {
+                index: count, t: 1, seconds: end, frame: frame,
+                label: timecodeString(frame, fpsInfo.num, fpsInfo.den, drop),
+                endIncluded: true
+            };
+            result.count = count + 1;
+            result.endIncluded = true;
+        }
+        return result;
+    }
+
+    // ------------------------------------------------------------------ api
+
+    var api = {
+        resolveFps: resolveFps,
+        sequence: sequence,
+        timecodeString: timecodeString,
+        frameFromSeconds: frameFromSeconds,
+        formatFrames: formatFrames
+    };
+
+    return api;
+})();

@@ -1,0 +1,535 @@
+// ============================================================================
+// TIME RULER — Core Calendar Time Engine (ExtendScript ES3, pure math)
+// ============================================================================
+// Module: TR.core.calendarTime
+// Environment: After Effects 2023+ (ExtendScript ES3) AND Node 22 (test harness).
+// PURE MATH ONLY: no `app`, no DOM, no alert, no #include, no AE APIs.
+//
+// sequence(timeCfg) -> { cyclic, endIncluded, count,
+//                        values:[{ index, t, ms, valueISO, label }] }
+//
+//   mode "calendar" only (numeric -> TR.core.numericTime, timecode ->
+//   TR.core.timecode; anything else throws {code:"UNSUPPORTED_TIME_MODE"}).
+//
+//   Date grammar (same the validation lane enforces, minus looser checks):
+//     "YYYY-MM-DD" | "YYYY-MM-DDTHH:MM" | "YYYY-MM-DDTHH:MM:SS"
+//     v1: NO timezone offsets, NO fractional seconds, years are 4-digit
+//     Gregorian (proleptic). Violations -> CALENDAR_DATE_FORMAT /
+//     CALENDAR_DATE_INVALID (engine component check is STRICTER than
+//     validation: Feb 30 / hour 24 are rejected here).
+//
+//   TIMEZONE POLICY (v1):
+//     - Positions (t) are computed on the ABSOLUTE millisecond timeline.
+//       timeZone "UTC"   -> instants built with Date.UTC (deterministic).
+//       timeZone "LOCAL" -> instants built with the local Date constructor
+//       (machine zone; a wall time that does not exist because of DST
+//       spring-forward yields NaN -> CALENDAR_DATE_INVALID).
+//     - Wall-clock labels (valueISO/label) are rendered with UTC getters in
+//       UTC mode and local getters in LOCAL mode.
+//     - DST: durations are absolute. Day/hour/minute/second steps are fixed
+//       ms strides (86400e3 / 3600e3 / 60e3 / 1e3), so in LOCAL mode a step
+//       crossing a DST change displays a 23h/25h wall-clock day — documented
+//       v1 behavior, not a bug.
+//
+//   Bounded (distributionMode !== "cyclic"):
+//     - Requires endDate > startDate (else CALENDAR_RANGE).
+//     - Years/months: CALENDAR ARITHMETIC from the START date per step:
+//       step(i) = addMonths/addYears(start, i). Day-of-month is CLAMPED to
+//       the end of the target month when needed (Jan 31 + 1 month = Feb 28).
+//       Because each step re-derives from start, Jan 31 + 2 months = Mar 31
+//       (the clamp applies per step, it does not compound).
+//     - Days/hours/minutes/seconds: ABSOLUTE ms stepping from startMs.
+//     - t = (itemMs - startMs) / (endMs - startMs) — REAL duration fraction.
+//       Unequal months get unequal spacing; NO equal numeric division for
+//       calendar units (spec 2.4). t clamped to [0, 1].
+//     - If the last unit step lands exactly on endMs: that item has t = 1
+//       and is a REGULAR item (endIncluded stays false, mirroring
+//       numeric-time divisible ranges; includeEndPoint is irrelevant there).
+//     - If it does NOT land on endMs: includeEndPoint === true appends the
+//       endDate item {t: 1, endIncluded: true}; otherwise stop at the last
+//       full step (default includeEndPoint=false matches schema default).
+//
+//   Cyclic (distributionMode === "cyclic" or cyclic === true):
+//     - Requires endDate - startDate to be an EXACT whole multiple of
+//       calendarUnit (e.g. 2026-01-01 -> 2027-01-01 in months = 12), else
+//       CALENDAR_CYCLIC_INVALID.
+//     - count = multiple; END-EXCLUSIVE: items i = 0..count-1 with t = i/count
+//       (12 months -> Jan..Dec, NO January repeat at closure — spec 2.3).
+//     - endIncluded is always false.
+//
+//   valueISO: the enumerated wall clock as "YYYY-MM-DD" optionally
+//   "THH:MM(:SS)". Time detail is included when the unit needs it
+//   (hours/minutes/seconds) or either input date carried a time part;
+//   ":SS" when the unit is seconds or an input date carried seconds.
+//
+//   Enumeration is a loop (unlike numeric-time's closed-form counts), so a
+//   runaway range would hang AE. Safety valve: more than MAX_STEPS unit
+//   steps throws CALENDAR_RANGE_TOO_LARGE (density caps normally live in the
+//   validation lane; this guard only exists because the enumeration loops).
+//
+// labelFor(value, timeCfg) -> string
+//   value = wall-clock parts {y, m, d, h, mi, s} (m 1..12; missing h/mi/s
+//   default to 0). timeCfg.calendarUnit + timeCfg.dateFormat drive it:
+//   - dateFormat empty, or contains no known token, -> unit default:
+//       years "2026" | months "Jan" | days "2026-01-15" |
+//       hours "06:00"  | minutes "06:30" | seconds "06:30:15"
+//   - token subset (longest-match tokenizer, unknown chars are literals):
+//       YYYY YYYY-MM MMM MMMM DD DDMM HH HHmm HHmmss mm ss
+//     (DDMM / HHmm / HHmmss are digit-pair concatenations, no separators.)
+//   - prefix/suffix are NOT applied here (adapter's job, as for numeric).
+//
+// Exposed: parseISO, utcMs, localMs, daysInMonth, sequence, labelFor,
+//          monthNamesShort, monthNamesLong.
+// ============================================================================
+
+var TR = $.global.TIME_RULER;
+if (typeof TR === 'undefined') { TR = {}; $.global.TIME_RULER = TR; }
+TR.core = TR.core || {};
+TR.core.calendarTime = (function () {
+
+    var EPS = 1e-9;
+    var MS_DAY = 86400000;
+    var MS_HOUR = 3600000;
+    var MS_MIN = 60000;
+    var MS_SEC = 1000;
+    // Gregorian 400-year leap cycle = exactly 146097 days (used to defeat the
+    // JS "years 0..99 map to 1900..1999" constructor quirk).
+    var MS_400_YEARS = 146097 * MS_DAY;
+    var MAX_STEPS = 200000;
+
+    var MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    var TOKENS = ["YYYY-MM", "YYYY", "MMMM", "MMM", "DDMM", "DD", "HHmmss", "HHmm", "HH", "mm", "ss"];
+
+    var ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/;
+
+    function throwCode(code, message) {
+        var e = new Error(message || code);
+        e.code = code;
+        e.trError = true;
+        throw e;
+    }
+
+    function isFiniteNumber(v) {
+        return (typeof v === 'number') && isFinite(v);
+    }
+
+    function numOr(v, def) {
+        return isFiniteNumber(v) ? v : def;
+    }
+
+    // -------------------------------------------------------------- padding
+
+    function pad2(n) {
+        if (n < 10) { return "0" + n; }
+        return "" + n;
+    }
+
+    function pad4(n) {
+        var s = String(n);
+        while (s.length < 4) { s = "0" + s; }
+        return s;
+    }
+
+    // ------------------------------------------------------- ISO date parts
+
+    // "YYYY-MM-DD(THH:MM(:SS))" -> {y, m, d, h, mi, s} (m 1..12).
+    // Strict grammar + STRICTER component check than the validation lane:
+    // day must be valid for its month (leap-aware), hour < 24, min/sec < 60.
+    // No timezone offsets, no fractional seconds (v1 policy, see header).
+    function parseISO(s) {
+        if (typeof s !== 'string' || !ISO_DATE_RE.test(s)) {
+            throwCode("CALENDAR_DATE_FORMAT",
+                'parseISO: expected "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM(:SS)" (no offsets/fractional seconds), got "' + String(s) + '"');
+        }
+        var y = parseInt(s.substr(0, 4), 10);
+        var m = parseInt(s.substr(5, 2), 10);
+        var d = parseInt(s.substr(8, 2), 10);
+        var h = 0, mi = 0, sec = 0;
+        var tail = s.substr(10);
+        if (tail.length > 0) {
+            h = parseInt(tail.substr(1, 2), 10);
+            mi = parseInt(tail.substr(4, 2), 10);
+            if (tail.length >= 8) { sec = parseInt(tail.substr(7, 2), 10); }
+        }
+        if (isNaN(y) || isNaN(m) || isNaN(d) || isNaN(h) || isNaN(mi) || isNaN(sec) ||
+            m < 1 || m > 12 ||
+            d < 1 || d > daysInMonth(y, m) ||
+            h < 0 || h > 23 ||
+            mi < 0 || mi > 59 ||
+            sec < 0 || sec > 59) {
+            throwCode("CALENDAR_DATE_INVALID", "parseISO: '" + s + "' is not a plausible calendar date/time");
+        }
+        return { y: y, m: m, d: d, h: h, mi: mi, s: sec };
+    }
+
+    // Days in month, 1..12; last-day trick via Date.UTC(y, m, 0) handles
+    // leap years (Date.UTC(2024, 2, 0) -> Feb 29 2024).
+    // Known JS quirk: years 0..99 are interpreted as 1900..1999 by the
+    // constructor; the leap pattern only differs for year 0. v1 targets
+    // realistic 4-digit years; documented, not worked around here.
+    function daysInMonth(y, m) {
+        if (!isFiniteNumber(y) || !isFiniteNumber(m) || m < 1 || m > 12) {
+            throwCode("CALENDAR_DATE_INVALID", "daysInMonth: month must be 1..12 and year a finite number");
+        }
+        return new Date(Date.UTC(y, m, 0)).getUTCDate();
+    }
+
+    // Absolute ms of wall-clock parts. UTC mode: Date.UTC. Both defeat the
+    // JS year 0..99 -> 1900..1999 quirk with a 400-year shift (exactly
+    // 146097*MS_DAY ms, integral Gregorian leap cycle — exact in UTC).
+    function utcMs(p) {
+        var y = numOr(p.y, 0), m = numOr(p.m, 1), d = numOr(p.d, 1);
+        var h = numOr(p.h, 0), mi = numOr(p.mi, 0), s = numOr(p.s, 0);
+        if (y >= 0 && y < 100) {
+            return Date.UTC(y + 400, m - 1, d, h, mi, s) - MS_400_YEARS;
+        }
+        return Date.UTC(y, m - 1, d, h, mi, s);
+    }
+
+    // Absolute ms of wall-clock parts in the machine's local zone.
+    // A wall time that does not exist (DST spring-forward gap) yields NaN —
+    // callers turn that into CALENDAR_DATE_INVALID.
+    function localMs(p) {
+        var y = numOr(p.y, 0), m = numOr(p.m, 1), d = numOr(p.d, 1);
+        var h = numOr(p.h, 0), mi = numOr(p.mi, 0), s = numOr(p.s, 0);
+        if (y >= 0 && y < 100) {
+            var shifted = new Date(y + 400, m - 1, d, h, mi, s).getTime();
+            return shifted - MS_400_YEARS;
+        }
+        return new Date(y, m - 1, d, h, mi, s).getTime();
+    }
+
+    // Wall-clock parts of an absolute ms, rendered with UTC or local getters
+    // per the configured zone.
+    function partsOfMs(ms, zone) {
+        var dt = new Date(ms);
+        if (zone === "LOCAL") {
+            return {
+                y: dt.getFullYear(), m: dt.getMonth() + 1, d: dt.getDate(),
+                h: dt.getHours(), mi: dt.getMinutes(), s: dt.getSeconds()
+            };
+        }
+        return {
+            y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate(),
+            h: dt.getUTCHours(), mi: dt.getUTCMinutes(), s: dt.getUTCSeconds()
+        };
+    }
+
+    // ------------------------------------------------- calendar arithmetic
+
+    // addMonths FROM a start part (i may exceed 1): month rollover m+1 ->
+    // y++/m=1; day-of-month clamped to the end of the target month
+    // (Jan 31 + 1 month = Feb 28 policy). Re-deriving every step from the
+    // start keeps the clamp per-step instead of compounding.
+    function addMonthsToParts(p, k) {
+        var total = p.y * 12 + (p.m - 1) + k;
+        var y = Math.floor(total / 12);
+        var m = total - y * 12 + 1; // 1..12
+        var d = p.d;
+        var dim = daysInMonth(y, m);
+        if (d > dim) { d = dim; }
+        return { y: y, m: m, d: d, h: p.h, mi: p.mi, s: p.s };
+    }
+
+    function addYearsToParts(p, k) {
+        var y = p.y + k;
+        var d = p.d;
+        var dim = daysInMonth(y, p.m);
+        if (d > dim) { d = dim; }
+        return { y: y, m: p.m, d: d, h: p.h, mi: p.mi, s: p.s };
+    }
+
+    // -------------------------------------------------------------- labels
+
+    function isoOf(p, withTime, withSeconds) {
+        var s = pad4(p.y) + "-" + pad2(p.m) + "-" + pad2(p.d);
+        if (withTime) {
+            s += "T" + pad2(p.h) + ":" + pad2(p.mi);
+            if (withSeconds) { s += ":" + pad2(p.s); }
+        }
+        return s;
+    }
+
+    function renderToken(tok, p) {
+        if (tok === "YYYY") { return pad4(p.y); }
+        if (tok === "YYYY-MM") { return pad4(p.y) + "-" + pad2(p.m); }
+        if (tok === "MMMM") { return MONTHS_LONG[p.m - 1]; }
+        if (tok === "MMM") { return MONTHS_SHORT[p.m - 1]; }
+        if (tok === "DDMM") { return pad2(p.d) + pad2(p.m); }
+        if (tok === "DD") { return pad2(p.d); }
+        if (tok === "HHmmss") { return pad2(p.h) + pad2(p.mi) + pad2(p.s); }
+        if (tok === "HHmm") { return pad2(p.h) + pad2(p.mi); }
+        if (tok === "HH") { return pad2(p.h); }
+        if (tok === "mm") { return pad2(p.mi); }
+        if (tok === "ss") { return pad2(p.s); }
+        return tok;
+    }
+
+    // True when fmt contains at least one known token.
+    function hasKnownToken(fmt) {
+        for (var i = 0; i < TOKENS.length; i++) {
+            if (fmt.indexOf(TOKENS[i]) !== -1) { return true; }
+        }
+        return false;
+    }
+
+    // value = wall-clock parts {y, m, d, h, mi, s}; timeCfg supplies
+    // calendarUnit + dateFormat. Empty/unknown format -> unit default.
+    function labelFor(value, timeCfg) {
+        if (!value || !isFiniteNumber(value.y)) {
+            throwCode("INVALID_LABEL_VALUE", "labelFor: value must be wall-clock parts {y,m,d,h,mi,s}");
+        }
+        var p = {
+            y: Math.round(numOr(value.y, 0)),
+            m: Math.round(numOr(value.m, 1)),
+            d: Math.round(numOr(value.d, 1)),
+            h: Math.round(numOr(value.h, 0)),
+            mi: Math.round(numOr(value.mi, 0)),
+            s: Math.round(numOr(value.s, 0))
+        };
+        // Defensive clamps (sequence always feeds valid parts; direct misuse
+        // must not crash the adapter).
+        if (p.m < 1) { p.m = 1; }
+        if (p.m > 12) { p.m = 12; }
+        if (p.h < 0) { p.h = 0; }
+        if (p.h > 23) { p.h = 23; }
+        if (p.mi < 0 || p.mi > 59) { p.mi = Math.max(0, Math.min(59, p.mi)); }
+        if (p.s < 0 || p.s > 59) { p.s = Math.max(0, Math.min(59, p.s)); }
+
+        var unit = (timeCfg && timeCfg.calendarUnit) ? timeCfg.calendarUnit : "years";
+        var fmt = (timeCfg && typeof timeCfg.dateFormat === 'string') ? timeCfg.dateFormat : "";
+
+        if (fmt.length > 0 && hasKnownToken(fmt)) {
+            var out = "";
+            var pos = 0;
+            while (pos < fmt.length) {
+                var matched = "";
+                for (var i = 0; i < TOKENS.length; i++) {
+                    if (fmt.substr(pos, TOKENS[i].length) === TOKENS[i]) { matched = TOKENS[i]; break; }
+                }
+                if (matched !== "") {
+                    out += renderToken(matched, p);
+                    pos += matched.length;
+                } else {
+                    out += fmt.charAt(pos);
+                    pos += 1;
+                }
+            }
+            return out;
+        }
+
+        // Unit defaults (empty/unknown format).
+        if (unit === "years") { return pad4(p.y); }
+        if (unit === "months") { return MONTHS_SHORT[p.m - 1]; }
+        if (unit === "days") { return pad4(p.y) + "-" + pad2(p.m) + "-" + pad2(p.d); }
+        if (unit === "hours") { return pad2(p.h) + ":" + pad2(p.mi); }
+        if (unit === "minutes") { return pad2(p.h) + ":" + pad2(p.mi); }
+        if (unit === "seconds") { return pad2(p.h) + ":" + pad2(p.mi) + ":" + pad2(p.s); }
+        return isoOf(p, true, true); // unknown unit fallback: full wall clock
+    }
+
+    // ------------------------------------------------------------- sequence
+
+    function sequence(timeCfg) {
+        if (!timeCfg) {
+            throwCode("MISSING_TIME_CONFIG", "sequence: timeCfg is required");
+        }
+        var mode = timeCfg.mode ? timeCfg.mode : "calendar";
+        if (mode !== "calendar") {
+            throwCode("UNSUPPORTED_TIME_MODE", "sequence: time mode '" + mode + "' is not supported by calendarTime");
+        }
+
+        var startP = parseISO(timeCfg.startDate); // coded errors propagate
+        var endP = parseISO(timeCfg.endDate);
+        var unit = timeCfg.calendarUnit ? timeCfg.calendarUnit : "years";
+        var zone = (timeCfg.timeZone === "LOCAL") ? "LOCAL" : "UTC";
+        var cyclic = (timeCfg.distributionMode === "cyclic") || (timeCfg.cyclic === true);
+        var includeEnd = (timeCfg.includeEndPoint === true);
+        var msOf = (zone === "LOCAL") ? localMs : utcMs;
+
+        var startMs = msOf(startP);
+        var endMs = msOf(endP);
+        if (isNaN(startMs) || isNaN(endMs)) {
+            throwCode("CALENDAR_DATE_INVALID", "sequence: local wall time does not exist (DST gap) in the configured zone");
+        }
+        if (!(endMs > startMs)) {
+            throwCode("CALENDAR_RANGE", "sequence: endDate must be later than startDate");
+        }
+        var spanMs = endMs - startMs;
+
+        // valueISO detail flags: time part when the unit needs it or any
+        // input date carried a time; ":SS" when the unit is seconds or an
+        // input date carried seconds.
+        var startTail = typeof timeCfg.startDate === 'string' ? timeCfg.startDate.substr(10) : "";
+        var endTail = typeof timeCfg.endDate === 'string' ? timeCfg.endDate.substr(10) : "";
+        var withTime = startTail.length > 0 || endTail.length > 0 ||
+            unit === "hours" || unit === "minutes" || unit === "seconds";
+        var withSeconds = startTail.length >= 8 || endTail.length >= 8 || unit === "seconds";
+
+        // step(i) -> parts, per unit family.
+        var stepParts = null;
+        var unitMs = 0;
+        if (unit === "years") {
+            stepParts = function (i) { return addYearsToParts(startP, i); };
+        } else if (unit === "months") {
+            stepParts = function (i) { return addMonthsToParts(startP, i); };
+        } else if (unit === "days") { unitMs = MS_DAY; }
+        else if (unit === "hours") { unitMs = MS_HOUR; }
+        else if (unit === "minutes") { unitMs = MS_MIN; }
+        else if (unit === "seconds") { unitMs = MS_SEC; }
+        else {
+            throwCode("UNSUPPORTED_CALENDAR_UNIT", "sequence: unknown calendarUnit '" + unit + "'");
+        }
+
+        var values = [];
+        var i, parts, itemMs, t;
+
+        if (unitMs > 0) {
+            // ---------------- absolute ms stepping (days/hours/min/sec)
+            var steps = Math.floor(spanMs / unitMs); // full strides that fit
+            if (steps > MAX_STEPS) {
+                throwCode("CALENDAR_RANGE_TOO_LARGE",
+                    "sequence: enumeration exceeds " + MAX_STEPS + " '" + unit + "' steps; narrow the range or use a coarser unit");
+            }
+            var exact = (spanMs - steps * unitMs) === 0; // integer ms math
+            if (cyclic) {
+                if (!exact) {
+                    throwCode("CALENDAR_CYCLIC_INVALID",
+                        "sequence: cyclic requires endDate - startDate to be a whole multiple of '" + unit + "'");
+                }
+                for (i = 0; i < steps; i++) {
+                    itemMs = startMs + i * unitMs;
+                    parts = partsOfMs(itemMs, zone);
+                    values[values.length] = {
+                        index: i, t: i / steps, ms: itemMs,
+                        valueISO: isoOf(parts, withTime, withSeconds),
+                        label: labelFor(parts, timeCfg)
+                    };
+                }
+                return { cyclic: true, endIncluded: false, count: steps, values: values };
+            }
+            // Bounded: items i = 0..steps (step index `steps` <= end always).
+            var count = steps + 1;
+            for (i = 0; i < count; i++) {
+                itemMs = startMs + i * unitMs;
+                parts = partsOfMs(itemMs, zone);
+                t = (itemMs - startMs) / spanMs;
+                if (t < 0) { t = 0; }
+                if (t > 1) { t = 1; }
+                values[values.length] = {
+                    index: i, t: t, ms: itemMs,
+                    valueISO: isoOf(parts, withTime, withSeconds),
+                    label: labelFor(parts, timeCfg)
+                };
+            }
+            // endIncluded mirrors numeric-time: false when the end item is a
+            // regular enumerated item (exact boundary), true only when the
+            // includeEndPoint append actually happened.
+            var result = { cyclic: false, endIncluded: false, count: count, values: values };
+            if (!exact && includeEnd) {
+                values[values.length] = {
+                    index: count, t: 1, ms: endMs,
+                    valueISO: isoOf(endP, withTime, withSeconds),
+                    label: labelFor(endP, timeCfg),
+                    endIncluded: true
+                };
+                result.count = count + 1;
+                result.endIncluded = true;
+            }
+            return result;
+        }
+
+        // ---------------- calendar arithmetic (years / months)
+        // Find the step count: walk i until step(i) >= endMs, remembering
+        // whether the end is hit exactly.
+        var walk = 0;
+        var exactSteps = false;
+        while (walk <= MAX_STEPS) {
+            itemMs = msOf(stepParts(walk));
+            if (itemMs === endMs) { exactSteps = true; break; }
+            if (itemMs > endMs) { break; }
+            walk++;
+        }
+        if (walk > MAX_STEPS) {
+            throwCode("CALENDAR_RANGE_TOO_LARGE",
+                "sequence: enumeration exceeds " + MAX_STEPS + " '" + unit + "' steps; narrow the range or use a coarser unit");
+        }
+        // walk = number of full steps with step(i) <= endMs when exact, else
+        // the number of steps with step(i) < endMs (step(walk) overshot).
+
+        if (cyclic) {
+            if (!exactSteps) {
+                throwCode("CALENDAR_CYCLIC_INVALID",
+                    "sequence: cyclic requires endDate - startDate to be an exact whole multiple of '" + unit + "'");
+            }
+            var cItems = walk; // END-EXCLUSIVE: items 0..count-1
+            for (i = 0; i < cItems; i++) {
+                parts = stepParts(i);
+                itemMs = msOf(parts);
+                values[values.length] = {
+                    index: i, t: i / cItems, ms: itemMs,
+                    valueISO: isoOf(parts, withTime, withSeconds),
+                    label: labelFor(parts, timeCfg)
+                };
+            }
+            return { cyclic: true, endIncluded: false, count: cItems, values: values };
+        }
+
+        // Bounded calendar arithmetic.
+        if (exactSteps) {
+            for (i = 0; i <= walk; i++) {
+                parts = stepParts(i);
+                itemMs = msOf(parts);
+                t = (itemMs - startMs) / spanMs;
+                if (t > 1) { t = 1; }
+                values[values.length] = {
+                    index: i, t: t, ms: itemMs,
+                    valueISO: isoOf(parts, withTime, withSeconds),
+                    label: labelFor(parts, timeCfg)
+                };
+            }
+            return { cyclic: false, endIncluded: false, count: walk + 1, values: values };
+        }
+
+        for (i = 0; i < walk; i++) {
+            parts = stepParts(i);
+            itemMs = msOf(parts);
+            t = (itemMs - startMs) / spanMs;
+            if (t < 0) { t = 0; }
+            values[values.length] = {
+                index: i, t: t, ms: itemMs,
+                valueISO: isoOf(parts, withTime, withSeconds),
+                label: labelFor(parts, timeCfg)
+            };
+        }
+        var boundedCount = walk;
+        var boundedResult = { cyclic: false, endIncluded: false, count: boundedCount, values: values };
+        if (includeEnd) {
+            values[values.length] = {
+                index: boundedCount, t: 1, ms: endMs,
+                valueISO: isoOf(endP, withTime, withSeconds),
+                label: labelFor(endP, timeCfg),
+                endIncluded: true
+            };
+            boundedResult.count = boundedCount + 1;
+            boundedResult.endIncluded = true;
+        }
+        return boundedResult;
+    }
+
+    // ------------------------------------------------------------------ api
+
+    var api = {
+        parseISO: parseISO,
+        utcMs: utcMs,
+        localMs: localMs,
+        daysInMonth: daysInMonth,
+        sequence: sequence,
+        labelFor: labelFor,
+        monthNamesShort: MONTHS_SHORT,
+        monthNamesLong: MONTHS_LONG
+    };
+
+    return api;
+})();

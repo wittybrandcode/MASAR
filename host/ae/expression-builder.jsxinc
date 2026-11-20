@@ -1,0 +1,296 @@
+// ============================================================================
+// TIME RULER — AE Expression Builder (ExtendScript ES3 host code)
+// ============================================================================
+// Module: TR.ae.expressions
+// Environment: host code is ExtendScript ES3; the expression STRINGS it builds
+// run inside AE's modern expression engine (spec 9.6 allows this — only the
+// HOST modules obey ES3).
+//
+// SINGLE SOURCE OF EXPRESSION STRINGS (spec 9.6, hard rule): every AE
+// expression used by the rig is built HERE. No rig module, builder or
+// harness may embed a raw expression literal anywhere else.
+//
+// Builders (each returns a string; only literal constants are embedded):
+//   progressMarkerExpr(p)       p {instanceId, ctrlName, startAngle, sweep,
+//                                  dirSign, radius} for circular/arc, or
+//                                  p {instanceId, ctrlName, linear:true,
+//                                  dx, dy} for linear (baseline vector).
+//   progressTrimEndExpr(p)      p {instanceId, ctrlName}
+//   highlightTrimStartExpr(p)   p {instanceId, ctrlName}
+//   highlightTrimEndExpr(p)     p {instanceId, ctrlName}
+//   revealOpacityExpr(p)        p {instanceId, ctrlName, t}  (t = 0..1)
+//   counterNumericExpr(p)       p {instanceId, ctrlName, start, end,
+//                                  precision, prefix, suffix}
+//   rotationOffsetExpr(p)       p {instanceId, ctrlName}
+//   colorBindExpr(p)            p {instanceId, ctrlName, effectName}
+//   labelStyleColorExpr(p)      p {instanceId, ctrlName, effectName}
+//   applyExpression(prop, expr, warnings, what)  -> set + post-check
+//
+// LOCAL-SPACE RULE (M5 design decision, see rig/progress.jsxinc header):
+// layers are parented to TR_<ID>_CTRL_MAIN whose ANCHOR sits at the ruler
+// center (circular/arc) or the baseline MIDPOINT (linear), so every position
+// expression is CENTER-RELATIVE parent-space math:
+//   circular marker: pos = radius*[cos(a), sin(a)],
+//                    a = startAngle + dirSign*sweep*Progress/100 (deg->rad)
+//   linear marker:   pos = [dx*k, dy*k], k = Progress/100 - 0.5
+//                    (full baseline mapped through the midpoint origin;
+//                    +x/baseline-vector "forward" is preserved; matches the
+//                    M3 static marker trajectory positionAtT at every t).
+//
+// EMBEDDED CONSTANTS: startAngle/sweep/radius/dx/dy/start/end/precision and
+// the instance-scoped controller name are baked in as literals so each
+// instance's expressions are self-contained (unique names per instance,
+// spec 9.1). prefix/suffix are JSON-escaped string literals.
+//
+// POST-CHECK (spec 9.6): applyExpression() verifies the expression string is
+// non-empty after the write. AE scripting cannot reliably report expression
+// COMPILE errors — that limitation is documented in README-BRIDGE and covered
+// by the manual test matrix (real evaluation happens in AE).
+//
+// ES3 rules: var only, classic loops, try/catch, no ES5 built-ins.
+// ============================================================================
+
+var TR = $.global.TIME_RULER;
+if (typeof TR === 'undefined') { TR = {}; $.global.TIME_RULER = TR; }
+TR.ae = TR.ae || {};
+TR.ae.expressions = (function () {
+
+    /* Standard effect parameter display names used inside expressions. */
+    var PARAM = { slider: 'Slider', color: 'Color', angle: 'Angle' };
+
+    // -------------------------------------------------------------- literals
+
+    function num(v, def) {
+        return (typeof v === 'number' && isFinite(v)) ? v : def;
+    }
+
+    /** JS number literal for embedding (String(Number) keeps it shortest). */
+    function jsNum(v, def) {
+        return String(num(typeof v === 'number' ? v : parseFloat(v, 10), def));
+    }
+
+    /**
+     * JS string literal for embedding (prefix/suffix). Prefers the guarded
+     * JSON encoder; falls back to a minimal manual escape (backslash, quote,
+     * newline) so a broken JSON engine never silently drops the text.
+     */
+    function jsStr(s) {
+        var text = String(s);
+        var json = '';
+        try { json = TR.JSON.stringify(text); } catch (eJ) { json = ''; }
+        if (typeof json === 'string' && json.length >= 2 && json.charAt(0) === '"') {
+            return json;
+        }
+        var out = '"';
+        var i, c;
+        for (i = 0; i < text.length; i++) {
+            c = text.charAt(i);
+            if (c === '\\') { out += '\\\\'; }
+            else if (c === '"') { out += '\\"'; }
+            else if (c === '\n') { out += '\\n'; }
+            else if (c === '\r') { out += '\\r'; }
+            else { out += c; }
+        }
+        return out + '"';
+    }
+
+    /** Shared controller lookup line (unique per instance, spec 9.1). */
+    function ctrlLine(p) {
+        return 'var ctrl = thisComp.layer("' + String(p.ctrlName) + '");';
+    }
+
+    function header(text, p) {
+        return '// TIME RULER ' + text + ' (instance ' + String(p.instanceId) + ')';
+    }
+
+    // ------------------------------------------------------------ builders
+
+    /**
+     * Progress marker Position expression. Circular/arc: center-relative
+     * circular math. Linear: full baseline mapped through the midpoint
+     * origin (dx/dy = baseline vector; see header LOCAL-SPACE RULE).
+     */
+    function progressMarkerExpr(p) {
+        if (p && p.linear === true) {
+            return [
+                header('progress marker', p),
+                '// CTRL anchor = baseline midpoint -> CENTER-RELATIVE parent space.',
+                ctrlLine(p),
+                'var prog = ctrl.effect("Progress")("' + PARAM.slider + '");',
+                'var k = prog / 100 - 0.5; // baseline-relative t (midpoint origin)',
+                'var dx = ' + jsNum(p.dx, 0) + ';',
+                'var dy = ' + jsNum(p.dy, 0) + ';',
+                '[dx * k, dy * k]'
+            ].join('\n');
+        }
+        return [
+            header('progress marker', p),
+            '// CTRL anchor = ruler center -> CENTER-RELATIVE parent space.',
+            ctrlLine(p),
+            'var prog = ctrl.effect("Progress")("' + PARAM.slider + '");',
+            'var ang = ' + jsNum(p.startAngle, -90) + ' + ' + jsNum(p.dirSign, 1) +
+                ' * ' + jsNum(p.sweep, 360) + ' * (prog / 100); // startAngle + dir*sweep*t',
+            'var rad = ang * Math.PI / 180;',
+            'var r = ' + jsNum(p.radius, 0) + ';',
+            '[r * Math.cos(rad), r * Math.sin(rad)]'
+        ].join('\n');
+    }
+
+    /** PROGRESS Trim Paths "End" follows the Progress slider. */
+    function progressTrimEndExpr(p) {
+        return [
+            header('progress trim End', p),
+            'thisComp.layer("' + String(p.ctrlName) + '").effect("Progress")("' + PARAM.slider + '")'
+        ].join('\n');
+    }
+
+    /** HIGHLIGHT Trim Paths "Start" follows the Highlight Start slider. */
+    function highlightTrimStartExpr(p) {
+        return [
+            header('highlight trim Start', p),
+            'thisComp.layer("' + String(p.ctrlName) + '").effect("Highlight Start")("' + PARAM.slider + '")'
+        ].join('\n');
+    }
+
+    /** HIGHLIGHT Trim Paths "End" follows the Highlight End slider. */
+    function highlightTrimEndExpr(p) {
+        return [
+            header('highlight trim End', p),
+            'thisComp.layer("' + String(p.ctrlName) + '").effect("Highlight End")("' + PARAM.slider + '")'
+        ].join('\n');
+    }
+
+    /**
+     * Staggered Reveal opacity for one item at normalized position t (0..1):
+     * opacity = clamp((Reveal - t*100) * 20, 0, 100) — a 5-unit-wide fade
+     * ramp that starts when Reveal crosses t*100 (spec 9.3 stagger).
+     * KNOWN EDGE (documented in README rig contract): at Reveal = 100 the
+     * ramp of an item with t > 0.95 is still below 100 (t = 1 -> exactly 0),
+     * per the formula as specified; the constants are single literals and
+     * flagged for design review.
+     */
+    function revealOpacityExpr(p) {
+        var tPct = Math.round(num(p.t, 0) * 10000) / 100;
+        return [
+            header('reveal stagger', p),
+            '// item normalized position t = ' + num(p.t, 0),
+            ctrlLine(p),
+            'var r = ctrl.effect("Reveal")("' + PARAM.slider + '");',
+            'var o = (r - ' + String(tPct) + ') * 20; // staggered fade by normalized position',
+            'Math.max(0, Math.min(100, o))'
+        ].join('\n');
+    }
+
+    /**
+     * Numeric counter Source Text: value = start + (end-start)*Progress/100,
+     * toFixed(precision), wrapped in prefix/suffix. MUST return a string
+     * (spec 9.5) — string concatenation guarantees it.
+     */
+    function counterNumericExpr(p) {
+        var precision = Math.round(num(p.precision, 0));
+        if (precision < 0) { precision = 0; }
+        if (precision > 6) { precision = 6; }
+        var tail = 's';
+        var prefix = (typeof p.prefix === 'string') ? p.prefix : '';
+        var suffix = (typeof p.suffix === 'string') ? p.suffix : '';
+        if (prefix.length > 0 || suffix.length > 0) {
+            tail = jsStr(prefix) + ' + s + ' + jsStr(suffix);
+        }
+        return [
+            header('numeric counter', p),
+            '// value = start + (end - start) * Progress/100; returns a STRING.',
+            ctrlLine(p),
+            'var prog = ctrl.effect("Progress")("' + PARAM.slider + '");',
+            'var v = ' + jsNum(p.start, 0) + ' + (' + jsNum(p.end, 0) + ' - ' +
+                jsNum(p.start, 0) + ') * prog / 100;',
+            'var s = v.toFixed(' + String(precision) + ');',
+            tail
+        ].join('\n');
+    }
+
+    /** CTRL rotation follows the Rotation Offset angle control. */
+    function rotationOffsetExpr(p) {
+        return [
+            header('rotation offset', p),
+            '// Children are parented to CTRL and rotate with it (intended).',
+            'thisComp.layer("' + String(p.ctrlName) + '").effect("Rotation Offset")("' + PARAM.angle + '")'
+        ].join('\n');
+    }
+
+    /** Stroke/fill color bind to one style Color control. */
+    function colorBindExpr(p) {
+        return [
+            header('color bind', p),
+            'thisComp.layer("' + String(p.ctrlName) + '").effect("' +
+                String(p.effectName) + '")("' + PARAM.color + '")'
+        ].join('\n');
+    }
+
+    /**
+     * Label fill color via AE 23.x+ style expressions. Self-guarding: when
+     * the style API is unavailable the catch keeps the static TextDocument,
+     * so the expression degrades to the original fill instead of erroring.
+     * setFillColor support is flagged for the manual test matrix.
+     */
+    function labelStyleColorExpr(p) {
+        return [
+            header('label color bind', p),
+            '// AE 23.x+ style expression; falls back to the static fill.',
+            ctrlLine(p),
+            'var out = text.sourceText;',
+            'try { out = text.sourceText.style.setFillColor(ctrl.effect("' +
+                String(p.effectName) + '")("' + PARAM.color + '")); } catch (errStyle) { /* keep static style */ }',
+            'out'
+        ].join('\n');
+    }
+
+    // ---------------------------------------------------------- apply + check
+
+    /**
+     * Sets one expression and post-checks it (spec 9.6): guarded write, then
+     * read-back must be non-empty. Returns true on success; appends an honest
+     * warning (never throws) on failure.
+     */
+    function applyExpression(propObj, exprString, warnings, what) {
+        var label = String(what || 'expression');
+        if (propObj === null || typeof propObj !== 'object') {
+            if (warnings) { warnings.push('Rig: property not found for "' + label + '".'); }
+            return false;
+        }
+        var s = String(exprString);
+        if (s.length === 0) {
+            if (warnings) { warnings.push('Rig: empty expression refused for "' + label + '".'); }
+            return false;
+        }
+        try { propObj.expression = s; } catch (eE) {
+            if (warnings) {
+                warnings.push('Rig: expression set failed on "' + label + '": ' +
+                    String(eE && eE.message ? eE.message : eE));
+            }
+            return false;
+        }
+        var back = '';
+        try { back = String(propObj.expression); } catch (eR) { back = s; }
+        if (back.length === 0) {
+            if (warnings) { warnings.push('Rig: expression read-back empty on "' + label + '".'); }
+            return false;
+        }
+        return true;
+    }
+
+    var api = {
+        PARAM: PARAM,
+        progressMarkerExpr: progressMarkerExpr,
+        progressTrimEndExpr: progressTrimEndExpr,
+        highlightTrimStartExpr: highlightTrimStartExpr,
+        highlightTrimEndExpr: highlightTrimEndExpr,
+        revealOpacityExpr: revealOpacityExpr,
+        counterNumericExpr: counterNumericExpr,
+        rotationOffsetExpr: rotationOffsetExpr,
+        colorBindExpr: colorBindExpr,
+        labelStyleColorExpr: labelStyleColorExpr,
+        applyExpression: applyExpression
+    };
+
+    return api;
+})();

@@ -1,0 +1,68 @@
+/* =============================================================================
+   TIME RULER — client/css/tokens.css
+   Design tokens: dark professional After-Effects-style palette, spacing,
+   typography, radii. CSS variables only — no external assets.
+   ========================================================================== */
+
+:root {
+    /* Surfaces (darkest → lightest) */
+    --bg-0: #141518;
+    --bg-1: #1b1d21;
+    --bg-2: #22252b;
+    --bg-3: #2a2e35;
+    --bg-4: #333842;
+
+    /* Borders */
+    --border-0: #303339;
+    --border-1: #3d424b;
+    --border-2: #4a505b;
+
+    /* Text */
+    --text-0: #e9ebee;
+    --text-1: #a8adb8;
+    --text-2: #767c88;
+
+    /* Accent — matches the default ruler brand color #2878D0 */
+    --accent: #2878D0;
+    --accent-strong: #4a8ee0;
+    --accent-soft: rgba(40, 120, 208, 0.16);
+    --accent-text: #cfe2f7;
+
+    /* Status */
+    --ok: #3fb27f;
+    --ok-soft: rgba(63, 178, 127, 0.16);
+    --warn: #F2A33C;
+    --warn-soft: rgba(242, 163, 60, 0.16);
+    --err: #e05252;
+    --err-soft: rgba(224, 82, 82, 0.18);
+    --idle: #7a7f8a;
+    --idle-soft: rgba(122, 127, 138, 0.18);
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 22px;
+
+    /* Radii */
+    --radius-s: 3px;
+    --radius-m: 5px;
+    --radius-l: 8px;
+
+    /* Typography */
+    --font-ui: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    --font-mono: Consolas, "Courier New", monospace;
+    --fs-xs: 10px;
+    --fs-s: 11px;
+    --fs-m: 12px;
+    --fs-l: 13px;
+
+    /* Controls */
+    --control-h: 26px;
+    --label-w: 128px;
+
+    /* Elevation */
+    --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.5);
+}

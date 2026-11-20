@@ -1,0 +1,166 @@
+// ============================================================================
+// TIME RULER — AE Text Builder (ExtendScript ES3)
+// ============================================================================
+// Module: TR.ae.textBuilder
+// Environment: After Effects 2023+ (ExtendScript ES3). AE DOM access stays in
+// host/ae/* modules.
+//
+// createLabel(comp, name, textString, style)
+//   -> { layer, warnings:[] }
+//
+//   style: { fontName, fontSize, tracking, colorHex|colorRgb, justification }
+//
+// Behavior:
+//   - comp.layers.addText(textString) -> editable POINT text layer (never a
+//     shape-layer text; the panel owns per-label editing).
+//   - Source Text TextDocument is mutated on the value fetched from the
+//     property and written back ONCE with setValue (AE-safe recipe).
+//   - font: TextDocument.font takes a POSTSCRIPT name. Family names like
+//     "Arial" often still resolve (AE substitutes), but a strict host can
+//     throw — guarded, and a "Font fallback" warning is recorded instead of
+//     failing the whole generate.
+//   - applyFill=true + fillColor from hex; applyStroke=false; tracking;
+//     justification CENTER_JUSTIFY via the ParagraphJustification enum when
+//     the engine provides it (never localized names, never invented constants
+//     — the mock harness supplies the enum for Node runs).
+//
+//   Centering recipe (documented; see spec 8.5):
+//     anchorPoint = [rect.left + rect.width/2, rect.top + rect.height/2]
+//     (from sourceRectAtTime(0, false)), then position = the planned world
+//     point. Rotation is applied AFTER centering so it pivots around the
+//     visual text center. Parenting happens last (AE's .parent setter
+//     counterbalances transforms, preserving world position).
+//
+// ES3 rules: var only, classic loops, try/catch/finally, no ES5 built-ins.
+// ============================================================================
+
+var TR = $.global.TIME_RULER;
+if (typeof TR === 'undefined') { TR = {}; $.global.TIME_RULER = TR; }
+TR.ae = TR.ae || {};
+TR.ae.textBuilder = (function () {
+
+    var TEXT_DOC = 'ADBE Text Document';
+
+    function warn(msg) { return 'Font fallback: ' + msg; }
+
+    function prop(parent, matchName) {
+        if (parent === null || typeof parent !== 'object') { return null; }
+        try {
+            var p = parent.property(matchName);
+            return (p === null || typeof p === 'undefined') ? null : p;
+        } catch (eP) { return null; }
+    }
+
+    /**
+     * Source Text property: prefer the non-localized attribute shortcut
+     * layer.text.sourceText; fall back to the matchName lookup (the task
+     * documents both spellings for the same property).
+     */
+    function sourceTextProp(layer) {
+        var p = null;
+        try {
+            if (typeof layer.text !== 'undefined' && layer.text !== null &&
+                typeof layer.text.sourceText !== 'undefined') {
+                p = layer.text.sourceText;
+            }
+        } catch (eT) { p = null; }
+        if (p === null) { p = prop(layer, TEXT_DOC); }
+        return p;
+    }
+
+    /**
+     * Creates one editable text layer styled per `style`. Failures inside the
+     * TextDocument recipe degrade into warnings (never abort the generate —
+     * a label with default styling is better than half a ruler).
+     */
+    function createLabel(comp, name, textString, style) {
+        var warnings = [];
+        var layer = null;
+        try {
+            layer = comp.layers.addText(String(textString));
+        } catch (eL) {
+            if (TR.log) { TR.log('ERROR', 'createLabel: addText failed: ' + String(eL && eL.message ? eL.message : eL)); }
+            return { layer: null, warnings: warnings };
+        }
+        if (layer === null || typeof layer !== 'object') {
+            return { layer: null, warnings: warnings };
+        }
+        try { layer.name = name; } catch (eNm) { /* default name acceptable */ }
+
+        var textProp = sourceTextProp(layer);
+        if (textProp === null) {
+            warnings.push(warn('Source Text property not found on ' + name + '.'));
+            return { layer: layer, warnings: warnings };
+        }
+
+        var doc = null;
+        try { doc = textProp.value; } catch (eV) { doc = null; }
+        if (doc === null || typeof doc !== 'object') {
+            try {
+                doc = new TextDocument(String(textString));
+            } catch (eD) {
+                warnings.push(warn('TextDocument unavailable (' + String(eD && eD.message ? eD.message : eD) + ').'));
+                return { layer: layer, warnings: warnings };
+            }
+        }
+
+        try { doc.text = String(textString); } catch (eTxt) { /* value already set by addText */ }
+
+        /* font (PostScript name preferred; family names substituted by AE) */
+        try {
+            doc.font = String(style.fontName);
+        } catch (eF) {
+            warnings.push(warn('"' + String(style.fontName) + '" rejected (' +
+                String(eF && eF.message ? eF.message : eF) + '); AE default font kept.'));
+        }
+
+        try { doc.fontSize = style.fontSize; } catch (eFs) {
+            warnings.push(warn('fontSize ' + String(style.fontSize) + ' rejected (' +
+                String(eFs && eFs.message ? eFs.message : eFs) + ').'));
+        }
+
+        try {
+            doc.applyFill = true;
+            doc.fillColor = style.colorRgb;
+        } catch (eFill) {
+            warnings.push(warn('fillColor rejected (' +
+                String(eFill && eFill.message ? eFill.message : eFill) + ').'));
+        }
+
+        try { doc.applyStroke = false; } catch (eSt) { /* stroke-less labels */ }
+
+        try { doc.tracking = style.tracking; } catch (eTr) { /* tracking optional */ }
+
+        try {
+            var CENTER = (typeof ParagraphJustification !== 'undefined' && ParagraphJustification !== null &&
+                typeof ParagraphJustification.CENTER_JUSTIFY !== 'undefined')
+                ? ParagraphJustification.CENTER_JUSTIFY
+                : ParagraphJustificationCenterFallback();
+            doc.justification = CENTER;
+        } catch (eJ) {
+            warnings.push(warn('justification CENTER_JUSTIFY rejected (' +
+                String(eJ && eJ.message ? eJ.message : eJ) + ').'));
+        }
+
+        try { textProp.setValue(doc); } catch (eSet) {
+            warnings.push(warn('Source Text setValue failed (' +
+                String(eSet && eSet.message ? eSet.message : eSet) + ').'));
+        }
+
+        return { layer: layer, warnings: warnings };
+    }
+
+    /* ExtendScript does not expose ParagraphJustification on every minor
+     * version's scripting engine; numeric fallback = CENTER_JUSTIFY (=2 in
+     * every AE version since CS6). Used only when the enum object is absent. */
+    function ParagraphJustificationCenterFallback() {
+        return 2;
+    }
+
+    var api = {
+        createLabel: createLabel,
+        sourceTextProp: sourceTextProp
+    };
+
+    return api;
+})();

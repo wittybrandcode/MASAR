@@ -1,0 +1,245 @@
+// ============================================================================
+// TIME RULER — Rig: Counter (numeric expression / hold keyframes) (ES3)
+// ============================================================================
+// Module: TR.rig.counter
+// Environment: After Effects 2023+ (ExtendScript ES3). Expression STRINGS
+// come only from TR.ae.expressions (spec 9.6).
+//
+// LAYER RECIPE: text layer TR_<ID>_COUNTER built with the typography style,
+// anchor centered from sourceRectAtTime (same recipe as labels), then
+// PARENTED TO THE MARKER layer and positioned at [0, -(markerSize+fontSize)]
+// in MARKER-LOCAL space (task formula; in AE's y-down coords this offsets the
+// counter AWAY from the baseline side of the marker). The position value is
+// set AFTER parenting, so it is written in marker space directly. If the
+// marker is disabled the counter falls back to the CTRL parent (+ warning).
+//
+// VALUE MODES (spec 9.2/9.5):
+//   numeric   -> Source Text expression = counterNumericExpr (start/end/
+//                precision/prefix/suffix embedded from cfg.time; MUST return
+//                a string; string concatenation guarantees it).
+//   calendar  -> pre-generated labels from TR.core.calendarTime.sequence
+//                (values[].label) written as HOLD KEYFRAMES: label i at comp
+//                time i (seconds), 1 keyframe per major label, ordered; set
+//                via setValueAtTime + setInterpolationTypeAtTime(HOLD/HOLD).
+//                CAP: > 200 labels -> skip + honest warning. The engine
+//                module is part of the M4 integration; until bootstrap loads
+//                it the counter records "Calendar counter arrives with M4
+//                integration." and keeps the static text.
+//   timecode  -> same hold-keyframe flow over TR.core.timecode.sequence
+//                (values[].label); guard warning "Timecode counter arrives
+//                with M4 integration." while the engine is not loaded.
+//   no expression is combined with keyframes (an expression would override
+//   them — the two paths are mutually exclusive by construction).
+//
+// COLOR DECISION (documented): the counter keeps a STATIC fill
+// (typography.color). Combining computed text (or hold keyframes) with
+// text.sourceText.style.setFillColor in ONE expression is the most fragile
+// corner of the AE expression engine; the Label Color control therefore
+// binds LABELS only, and a build warning records the static counter fill.
+// Flagged for the manual test matrix alongside the label style binds.
+//
+// KEYFRAME INTERPOLATION: KeyframeInterpolationType.HOLD is used when the
+// engine exposes the enum; when it does not, keyframes are still written
+// (default interpolation) and a warning notes the degradation.
+//
+// ES3 rules: var only, classic loops, try/catch, no ES5 built-ins.
+// ============================================================================
+
+var TR = $.global.TIME_RULER;
+if (typeof TR === 'undefined') { TR = {}; $.global.TIME_RULER = TR; }
+TR.rig = TR.rig || {};
+TR.rig.counter = (function () {
+
+    /* Hold-keyframe cap (spec 9.2: documented max for the pre-generated
+     * table; beyond it the counter is skipped honestly). */
+    var COUNTER_KEYFRAMES_MAX = 200;
+
+    function num(v, def) {
+        return (typeof v === 'number' && isFinite(v)) ? v : def;
+    }
+
+    function setVal(p, v) {
+        if (p === null || typeof p !== 'object') { return false; }
+        try { p.setValue(v); return true; } catch (eS) { return false; }
+    }
+
+    function holdEnum(warnings) {
+        try {
+            if (typeof KeyframeInterpolationType !== 'undefined' &&
+                KeyframeInterpolationType !== null &&
+                typeof KeyframeInterpolationType.HOLD !== 'undefined') {
+                return KeyframeInterpolationType.HOLD;
+            }
+        } catch (eK) { /* enum unavailable */ }
+        warnings.push('Rig: KeyframeInterpolationType.HOLD unavailable; counter keyframes use default interpolation.');
+        return null;
+    }
+
+    /**
+     * Writes labels[i] at comp time i (seconds) as HOLD keyframes.
+     * Returns the number of keyframes successfully written.
+     */
+    function applyHoldKeyframes(srcProp, labels, warnings) {
+        var hold = holdEnum(warnings);
+        var applied = 0;
+        for (var i = 0; i < labels.length; i++) {
+            try {
+                srcProp.setValueAtTime(i, labels[i]);
+                applied++;
+            } catch (eS) {
+                warnings.push('Rig: counter keyframe ' + i + ' failed: ' +
+                    String(eS && eS.message ? eS.message : eS));
+                break;
+            }
+            if (hold !== null) {
+                try { srcProp.setInterpolationTypeAtTime(i, hold, hold); } catch (eI) {
+                    /* interpolation type is best-effort; keyframes stay */
+                }
+            }
+        }
+        return applied;
+    }
+
+    /**
+     * Hold-keyframe path shared by calendar + timecode (labels from a
+     * pre-generated sequence; engines arrive with the M4 integration).
+     */
+    function keyframeFromSequence(sequenceFn, args, srcProp, warnings) {
+        var seq = null;
+        try { seq = sequenceFn.apply(null, args); } catch (eQ) {
+            warnings.push('Rig: counter sequence failed: ' +
+                String(eQ && eQ.message ? eQ.message : eQ));
+            return false;
+        }
+        if (!seq || !seq.values || seq.values.length === 0) {
+            warnings.push('Rig: counter sequence returned no labels.');
+            return false;
+        }
+        if (seq.values.length > COUNTER_KEYFRAMES_MAX) {
+            warnings.push('Counter simplified: ' + seq.values.length +
+                ' labels exceed the ' + COUNTER_KEYFRAMES_MAX + '-keyframe cap.');
+            return false;
+        }
+        var labels = [];
+        for (var i = 0; i < seq.values.length; i++) {
+            var v = seq.values[i];
+            labels[labels.length] = String(
+                (v && typeof v.label !== 'undefined' && v.label !== null) ? v.label :
+                ((v && typeof v.valueISO !== 'undefined') ? v.valueISO : ''));
+        }
+        var applied = applyHoldKeyframes(srcProp, labels, warnings);
+        return (applied === labels.length && applied > 0);
+    }
+
+    /**
+     * Creates TR_<ID>_COUNTER, parents it to the MARKER (fallback CTRL) and
+     * applies the value mode. Returns { applied, expressions, keyframed }.
+     */
+    function apply(ctx, warnings) {
+        var sb = ctx.sb;
+        var tb = ctx.tb;
+        var MD = ctx.MD;
+        var EX = TR.ae.expressions;
+        var cfg = ctx.cfg;
+        var typo = cfg.typography || {};
+        var timeV = cfg.time || {};
+        var mode = timeV.mode ? timeV.mode : 'numeric';
+        var ctrlName = ctx.ctrl ? (function () { try { return String(ctx.ctrl.name); } catch (eN) { return ''; } })() : '';
+
+        var initialText = (mode === 'numeric') ? String(num(timeV.start, 0)) : '';
+        var made = tb.createLabel(ctx.comp, 'TR_' + ctx.instanceId + '_COUNTER', initialText, {
+            fontName: typo.fontName,
+            fontSize: num(typo.fontSize, 30),
+            tracking: num(typo.tracking, 0),
+            colorRgb: sb.hexToRgb(typo.color)
+        });
+        var wj;
+        for (wj = 0; wj < made.warnings.length; wj++) { warnings.push(made.warnings[wj]); }
+        if (made.layer === null) {
+            warnings.push('Rig: counter layer creation failed.');
+            return { applied: false, expressions: 0, keyframed: false };
+        }
+        var layer = made.layer;
+        MD.writeMetadata(layer, ctx.instanceId, 'COUNTER', 'COUNTER');
+
+        /* Anchor centering (same recipe as labels; sourceRect may fail -> warn). */
+        var rect = null;
+        try { rect = layer.sourceRectAtTime(0, false); } catch (eR) { rect = null; }
+        if (rect !== null && typeof rect === 'object') {
+            var t = sb.prop(layer, 'ADBE Transform Group');
+            var ap = (t !== null) ? sb.prop(t, 'ADBE Anchor Point') : null;
+            if (ap === null && typeof layer.anchorPoint !== 'undefined') { ap = layer.anchorPoint; }
+            setVal(ap, [rect.left + rect.width / 2, rect.top + rect.height / 2, 0]);
+        } else {
+            warnings.push('Rig: counter sourceRectAtTime unavailable; anchor left at default.');
+        }
+
+        /* Parent to the MARKER (falls back to CTRL with a warning). */
+        var parentLayer = ctx.marker;
+        if (!parentLayer) {
+            parentLayer = ctx.ctrl;
+            warnings.push('Rig: marker layer missing; counter parented to the controller instead.');
+        }
+        if (parentLayer) {
+            try { layer.parent = parentLayer; } catch (eP) {
+                warnings.push('Rig: counter parenting failed: ' +
+                    String(eP && eP.message ? eP.message : eP));
+            }
+        }
+
+        /* Position in MARKER-LOCAL space (set AFTER parenting). */
+        var pt = sb.prop(layer, 'ADBE Transform Group');
+        var pp = (pt !== null) ? sb.prop(pt, 'ADBE Position') : null;
+        if (pp === null && typeof layer.position !== 'undefined') { pp = layer.position; }
+        var markerSize = num(cfg.indicators ? cfg.indicators.markerSize : 10, 10);
+        var fontSize = num(typo.fontSize, 30);
+        setVal(pp, [0, -(markerSize + fontSize), 0]);
+
+        /* Static color decision (see header) — recorded honestly. */
+        warnings.push('Counter color is static; the Label Color control binds labels only.');
+
+        var count = 0;
+        var keyframed = false;
+        var srcProp = tb.sourceTextProp(layer);
+
+        if (mode === 'numeric') {
+            var precision = Math.round(num(timeV.precision, 0));
+            if (precision < 0) { precision = 0; }
+            if (precision > 6) { precision = 6; }
+            if (srcProp && EX) {
+                var ok = EX.applyExpression(srcProp,
+                    EX.counterNumericExpr({
+                        instanceId: ctx.instanceId,
+                        ctrlName: ctrlName,
+                        start: num(timeV.start, 0),
+                        end: num(timeV.end, 0),
+                        precision: precision,
+                        prefix: (typeof timeV.prefix === 'string') ? timeV.prefix : '',
+                        suffix: (typeof timeV.suffix === 'string') ? timeV.suffix : ''
+                    }),
+                    warnings, 'counter numeric expression');
+                if (ok) { count++; }
+            }
+        } else if (mode === 'calendar') {
+            var cal = (TR.core && TR.core.calendarTime) ? TR.core.calendarTime : null;
+            if (!cal || typeof cal.sequence !== 'function') {
+                warnings.push('Calendar counter arrives with M4 integration.');
+            } else if (srcProp) {
+                keyframed = keyframeFromSequence(cal.sequence, [timeV], srcProp, warnings);
+            }
+        } else if (mode === 'timecode') {
+            var tc = (TR.core && TR.core.timecode) ? TR.core.timecode : null;
+            if (!tc || typeof tc.sequence !== 'function') {
+                warnings.push('Timecode counter arrives with M4 integration.');
+            } else if (srcProp) {
+                keyframed = keyframeFromSequence(tc.sequence, [timeV, ctx.compInfo], srcProp, warnings);
+            }
+        }
+        return { applied: true, expressions: count, keyframed: keyframed, layer: layer };
+    }
+
+    return {
+        COUNTER_KEYFRAMES_MAX: COUNTER_KEYFRAMES_MAX,
+        apply: apply
+    };
+})();
