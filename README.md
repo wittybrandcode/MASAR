@@ -1,145 +1,239 @@
-# MASAR PRO — مسار موشن جرافيك تايم لاين 🎬
-> **محرك الخطوط والمخططات الزمنية الاحترافي لبرنامج Adobe After Effects**  
-> **The Professional Motion Timeline & Infographics Engine for Adobe After Effects**
+<div align="center">
 
----
-
-## 🌟 نظرة عامة | Overview
-
-**MASAR PRO (مسار)** هو إضافة برمجية متقدمة (Adobe CEP Extension) لبرنامج After Effects، مصممة خصيصاً للمصممين المحترفين وصناع المحتوى لبناء وتحريك المخططات الزمنية (Timelines)، السلاسل الإجرائية (Process Steps)، والمخططات البيانية التفاعلية بضغطة زر واحدة، مع دعم كامل للغة العربية والإنجليزية، وتصميم بصري فائق العصرية مستوحى من نظام Adobe Spectrum بلون الزمرد الاحترافي (`#10b981`).
-
----
-
-## ✨ المميزات الرئيسية | Key Features
-
-### 1. بنية المنابع الثلاثية الذكية (Triple-Source Streams)
-* **المسار الأساسي (Main Front Stream):** عنوان رئيسي، شرح نصي تفصيلي، أو قوائم نقطية متعددة الأسطر.
-* **المسار المقابل (Opposite/Behind Stream):** نصوص، شارات، أو تفاصيل موازية في الجهة المقابلة لخط المسار.
-* **مركز العقدة (Node Core Stream):** ترقيم تسلسلي، نسب مئوية، مؤشرات إحصائية، شارات (Badges)، أو أيقونات.
-
-### 2. تسعة قوالب إخراج جاهزة (9 Smart Output Presets)
-1. 📄 **عنوان رئيسي + شرح تفصيلي** (Title + Body Description)
-2. 📑 **عنوان رئيسي + قائمة نقطية** (Title + Bulleted List)
-3. 🏷️ **عنوان رئيسي فقط** (Standalone Title)
-4. 📝 **شرح / نص تفصيلي فقط** (Standalone Description)
-5. 📋 **قائمة نقطية فقط** (Standalone Bullet List)
-6. 🔢 **رقم / ترقيم + عنوان** (Numbered Title)
-7. 📊 **نسبة / مؤشر + بيان** (Metric / Percentage + Label)
-8. ⭐ **أيقونة / رمز + عنوان** (Icon + Title)
-9. 🔖 **شارة مميزة (Badge)** (Prominent Status Pill / Badge)
-
-### 3. نظام التخصيص الذري والدرج المستقل (Atomic Drawers & Custom Boxes)
-* **صناديق نصية تلقائية القياس:** طبقات أشكال بارامترية تتغير أبعادها تلقائياً مع طول النص، مع تحكم دقيق في هوامش الحشو (Padding) والزوايا المستديرة (Corner Radius) وألوان التعبئة والإطار.
-* **تخصيص فردي لكل عقدة:** إمكانية تخصيص مظهر أي عقدة بشكل منفصل عن النمط العام بضغطة زر واحدة.
-
-### 4. تحكم عام شامل بالخط الزمني (Master Timeline Controls)
-* **المحاذاة:** دعم كامل للمسار الأفقي (Horizontal) والعمودي (Vertical).
-* **نمط التوزيع:** توزيع تلقائي متكافئ على طول المسار (Auto Spacing) أو فواصل ثابتة بالبيكسل (Fixed Gap).
-* **تخصيص الخط الرئيسي (Baseline):** خط مصمت (Solid)، متقطع (Dashed)، أو منقط (Dotted)، مع أطراف دائرية، أسهم، أو نقاط نهائية.
-* **أشكال العقد:** دوائر مصمتة، حلقات مفرغة، مربعات، معينات، مسدسات، نجوم، أو أسنان تحديد (Ticks).
-
-### 5. تصدير مباشر إلى قوالب موشن جرافيكس (MOGRT Ready)
-* إعداد مباشر لخصائص Essential Graphics بنقرة زر واحدة.
-* تصدير فوري لملف `.mogrt` مع حماية مناطق البداية والنهاية عبر Responsive Time Markers لبرنامج Premiere Pro.
-
----
-
-## 📁 هيكلية المشروع | Project Architecture
-
-```text
-MASAR/
-├── CSXS/
-│   └── manifest.xml          # تعريف إضافة CEP وهوية MASAR PRO
-├── .debug                    # منفذ فحص وتطوير Chrome DevTools (8092)
-├── client/                   # واجهة المستخدم (HTML5 / Modern Modular JS)
-│   ├── index.html            # واجهة لوحة التحكم المتوافقة مع Spectrum
-│   ├── css/
-│   │   ├── flat-spectrum.css # ثيم الزمرد الاحترافي المتطور
-│   │   ├── textoro-spectrum.css
-│   │   └── spectrum-vars.css
-│   ├── js/
-│   │   ├── app.js            # منسق الواجهة والأحداث الرئيسي
-│   │   ├── bridge.js         # جسر التواصل الآمن مع ExtendScript
-│   │   └── modules/
-│   │       ├── state-store.js    # إدارة الحالة والتخزين المحلي
-│   │       ├── host-bridge.js    # مزامنة البيانات مع After Effects
-│   │       ├── card-builder.js   # بناء بطاقات العقد والمنابع
-│   │       ├── global-controls.js# إدارة المتحكمات العامة
-│   │       ├── node-manager.js   # إدارة إضافة وحذف وترتيب العقد
-│   │       ├── shapes-engine.js  # محرك معاينة ورسم الأشكال
-│   │       └── batch-importer.js # استيراد البيانات دفعة واحدة
-│   └── assets/               # الأيقونات والخطوط المدمجة
-├── host/                     # محرك ExtendScript البرمجي لـ After Effects
-│   └── bootstrap.jsx         # البناء الإجرائي للطبقات والأشكال والتعبيرات
-├── presets/                  # القوالب الجاهزة المخزنة
-└── README.md                 # هذا الملف
 ```
+ __  __           _____            _____  
+|  \/  |   /\    / ____|   /\     |  __ \ 
+| \  / |  /  \  | (___    /  \    | |__) |
+| |\/| | / /\ \  \___ \  / /\ \   |  _  / 
+| |  | |/ ____ \ ____) |/ ____ \  | | \ \ 
+|_|  |_/_/    \_\_____//_/    \_(_)_|  \_\
+```
+
+# MASAR PRO — مسار موشن جرافيك تايم لاين 🎬
+### *The Next-Gen Motion Timeline & Infographics Engine for Adobe After Effects*
+
+[![Version](https://img.shields.io/badge/Version-2.5.0-10b981?style=for-the-badge&logo=git&logoColor=white)](https://github.com/wittybrandcode/MASAR)
+[![Adobe AE](https://img.shields.io/badge/Adobe%20After%20Effects-2020%20--%202025+-9999FF?style=for-the-badge&logo=adobeaftereffects&logoColor=white)](https://www.adobe.com/products/aftereffects.html)
+[![CEP Engine](https://img.shields.io/badge/CEP-11.0%20%7C%20ES3%20ExtendScript-059669?style=for-the-badge)](https://github.com/Adobe-CEP)
+[![UI System](https://img.shields.io/badge/UI-Adobe%20Spectrum%20Emerald-047857?style=for-the-badge)](https://spectrum.adobe.com/)
+[![License](https://img.shields.io/badge/License-Proprietary%20%7C%20Commercial-334155?style=for-the-badge)](LICENSES.md)
+
+<p align="center">
+  <b>«مسار» هو الإضافة البرمجية الأكثر تطوراً واحترافية لبناء وتوليد المخططات الزمنية والسلاسل الإجرائية والإنفوجرافيك التفاعلي في Adobe After Effects بضغطة زر واحدة.</b><br>
+  <i>Empowering motion designers to craft broadcast-grade, parametric timelines and infographic sequences with procedural precision and bilingual RTL typography.</i>
+</p>
+
+---
+
+[🌟 المميزات الرئيسية](#-المميزات-الرئيسية--key-features) •
+[🧩 بنية المنابع الثلاثية](#-بنية-المنابع-الثلاثية--triple-source-architecture) •
+[📋 مصفوفة القوالب التسعة](#-مصفوفة-القوالب-التسعة--9-smart-output-presets) •
+[🏛️ الهيكلية البرمجية](#-الهيكلية-البرمجية--architecture) •
+[🚀 التثبيت والتشغيل](#-التثبيت-والتشغيل--installation--setup) •
+[🛠️ بيئة التطوير](#-بيئة-التطوير-والفحص--developer-debugging)
+
+---
+
+</div>
+
+## 🌟 المميزات الرئيسية | Key Features
+
+* **💎 واجهة زمردية عصرية (Spectrum Emerald UI):** تصميم بصري هادئ وفائق الأناقة مستوحى من نظام Adobe Spectrum، مبني بنظام Dual-Tab وبكثافة لونية خالية من أي تشويش لراحة العين أثناء العمل الطويل.
+* **⚡ توليد إجرائي فوري (Zero-Lag Procedural Generation):** توليد كامل للطبقات الأصلية (Native Shape & Text Layers) مع ربط تعبيري ديناميكي (Dynamic Expressions) بمعدل أداء يصل إلى 60 إطاراً في الثانية.
+* **📐 تحكم هندسي مطلق (Parametric Baseline & Node Geometry):** تحكم في سماكة الخط، أنماط الخطوط (مصمت، متقطع، منقط)، أطراف المسار (أسهم، نقاط، عوارض)، و 8 أشكال هندسية رئيسية للعقد (دوائر، حلقات، مربعات، معينات، مسدسات، نجوم، وأسنان).
+* **🗂️ نظام الصناديق الذرية التلقائية (Atomic Auto-Sizing Box Drawers):** صناديق خلفية بارامترية تلتف حول النصوص وتتوسع ذاتياً مع كتابة وتعديل النصوص، مع تحكم فردي بكل عقدة على حدة.
+* **🌐 دعم كامل وحقيقي للغة العربية (True RTL & Bilingual Typography):** معالجة متقدمة لاتجاه النصوص العربية ومحاذاة القوائم النقطية والرموز والأرقام دون الحاجة لأي وسيط خارجي.
+* **📦 تجهيز فوري لقوالب MOGRT:** تصدير مباشر إلى قوالب Essential Graphics لبرنامج Premiere Pro مع حماية الحركات الافتتاحية والختامية عبر مناطق التوقيت التفاعلية (Responsive Design Time Markers).
+
+---
+
+## 🧩 بنية المنابع الثلاثية | Triple-Source Architecture
+
+تعتمد إضافة **MASAR PRO** على معمارية معالجة بيانات مبتكرة تقسم كل عقدة في الخط الزمني إلى ثلاثة منابع مستقلة تمنح المصمم حرية مطلقة في بناء التراكيب:
+
+```mermaid
+flowchart TD
+    Node["عقدة الخط الزمني (Timeline Node)"]
+    
+    subgraph S1["1. المسار الأساسي (Front Stream)"]
+        F1["عنوان رئيسي (Title)"]
+        F2["شرح تفصيلي (Description)"]
+        F3["قوائم نقطية (Bullet Points)"]
+    end
+    
+    subgraph S2["2. مركز العقدة (Node Core Stream)"]
+        C1["ترقيم تسلسلي (Number)"]
+        C2["نسب ومؤشرات (Metric / %)"]
+        C3["شارة مميزة (Badge Pill)"]
+        C4["أيقونات ورموز (Icons)"]
+    end
+    
+    subgraph S3["3. المسار المقابل (Opposite / Behind Stream)"]
+        B1["نصوص موازية في الجهة المقابلة"]
+        B2["شارات تاريخية وتصنيفات فرعية"]
+        B3["صندوق خلفي مستقل"]
+    end
+    
+    Node --> S1
+    Node --> S2
+    Node --> S3
+```
+
+---
+
+## 📋 مصفوفة القوالب التسعة | 9 Smart Output Presets
+
+تتضمن الإضافة تسعة أنماط إخراج ذكية تغطي كافة احتياجات الموشن جرافيكس التلفزيوني والشبكي:
+
+| # | القالب (Preset) | الوصف (Description) | الطبقات المولدة في After Effects |
+|---|---|---|---|
+| **01** | 📄 **عنوان رئيسي + شرح تفصيلي** | النمط القياسي للسرد الإخباري والوثائقي | `Title Text` + `Desc Text` + `Title Box` + `Desc Box` |
+| **02** | 📑 **عنوان رئيسي + قائمة نقطية** | عرض بنود متعددة وأفكار متسلسلة | `Title Text` + `Bulleted List Text` + `Adaptive Box` |
+| **03** | 🏷️ **عنوان رئيسي فقط** | رؤوس أقلام ومراحل عريضة بدون حشو | `Title Text` + `Custom Background Shape` |
+| **04** | 📝 **شرح / نص تفصيلي فقط** | فقرات سردية مرتبطة بنقاط الخط الزمني | `Body Paragraph Text` + `Reading Container` |
+| **05** | 📋 **قائمة نقطية فقط** | سرد مباشر لبنود وملاحظات نقطية | `Multi-line Bulleted Text Layer` |
+| **06** | 🔢 **رقم / ترقيم + عنوان** | خطوات إجرائية (خطوة 1، خطوة 2...) | `Step Number Layer` + `Title Layer` + `Offset Box` |
+| **07** | 📊 **نسبة / مؤشر + بيان** | إحصائيات، نمو سنوي، ومؤشرات رقمية | `Dynamic Metric Text` + `Subtitle Layer` |
+| **08** | ⭐ **أيقونة / رمز + عنوان** | ترميز بصري لعناصر القوائم والخدمات | `Icon Glyph Layer` + `Title Text` |
+| **09** | 🔖 **شارة مميزة (Badge)** | أوسمة وتصنيفات بارزة في كبسولات أنيقة | `Pill Capsule Shape` + `Centered Badge Text` |
+
+---
+
+## 🏛️ الهيكلية البرمجية | Architecture
+
+تم تصميم محرك **MASAR PRO** بنظام معياري مفصول تماماً (Decoupled Modular Architecture):
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Designer as مصمم الموشن جرافيك
+    participant UI as واجهة MASAR (HTML/CSS)
+    participant Store as State Store (V1)
+    participant Bridge as CEP Bridge Engine
+    participant JSX as ExtendScript Host Engine
+    participant AE as After Effects Composition
+
+    Designer->>UI: تعديل النصوص أو المعاملات أو الأشكال
+    UI->>Store: تحديث الحالة وتخزينها محلياً (Auto-Persist)
+    Store->>Bridge: استدعاء المزامنة المباشرة (Debounced Live Sync)
+    Bridge->>JSX: إرسال JSON Payload مشفر ومحمي
+    JSX->>AE: فحص الطبقات وإنشاء Null Controller (MASAR_CTRL)
+    JSX->>AE: توليد خط المسار (MS_Baseline) وشكل العقد (MS_Nodes)
+    JSX->>AE: بناء طبقات النصوص وتحديث قياس الصناديق التلقائية
+    AE-->>UI: تأكيد اكتمال التوليد بنجاح (ok: true, layerCount: N)
+```
+
+### المكونات الرئيسية:
+1. **`client/` (Frontend Layer):**
+   * **`modules/state-store.js`:** إدارة الحالة المركزية مع ترقية سلسة للبيانات السابقة.
+   * **`modules/host-bridge.js`:** مزامنة لحظية مع After Effects بآلية طابور ذكية تمنع تراكم الأوامر.
+   * **`modules/card-builder.js`:** محرك بناء بطاقات العقد والمنابع ونوافذ التخصيص الذري.
+   * **`modules/global-controls.js`:** إدارة متحكمات الخط الرئيسي، التباعد، والمحاذاة.
+2. **`host/` (Backend Engine):**
+   * **`bootstrap.jsx`:** المحرك الرئيسي المكتوب بلغة ExtendScript (ES3-safe) الخالي من أي استثناءات، المسؤول عن بناء الأشكال، حساب المعادلات الرياضية لمواقع العقد، وربط طبقات النصوص بصناديقها الخلفية عبر Dynamic Expressions.
 
 ---
 
 ## 🚀 التثبيت والتشغيل | Installation & Setup
 
-### المتطلبات الأساسية:
-* **نظام التشغيل:** Windows 10/11 أو macOS 10.15+.
-* **برنامج أدوبي:** Adobe After Effects 2020 أو أحدث (v17.0+ حتى v25+).
+### المتطلبات:
+* نظام **Windows 10 / 11** أو **macOS 10.15+**.
+* برنامج **Adobe After Effects 2020** فما فوق (حتى أحدث إصدار v25+).
 
-### 1. مسار التثبيت (Installation Path):
-انسخ مجلد المشروع `MASAR` إلى مسار إضافات أدوبي:
+### 1. نسخ الإضافة إلى مسار ملحقات أدوبي (CEP Extensions):
 
-* **Windows:**
-  ```text
-  C:\Program Files (x86)\Common Files\Adobe\CEP\extensions\MASAR
-  ```
-  أو للمستخدم الحالي:
-  ```text
-  C:\Users\<UserName>\AppData\Roaming\Adobe\CEP\extensions\MASAR
-  ```
+#### على نظام Windows:
+انسخ مجلد `MASAR` إلى أحد المسارين التاليين:
+```text
+C:\Program Files (x86)\Common Files\Adobe\CEP\extensions\MASAR
+```
+*(أو لمستخدم النظام الحالي فقط):*
+```text
+%APPDATA%\Adobe\CEP\extensions\MASAR
+```
 
-* **macOS:**
-  ```text
-  /Library/Application Support/Adobe/CEP/extensions/MASAR
-  ```
-  أو للمستخدم الحالي:
-  ```text
-  ~/Library/Application Support/Adobe/CEP/extensions/MASAR
-  ```
-
-### 2. تفعيل وضع التطوير (Enable PlayerDebugMode):
-للسماح لـ After Effects بتحميل إضافات CEP غير الموقعة رقمياً:
-
-* **Windows (PowerShell كمسؤول):**
-  ```powershell
-  reg add "HKCU\Software\Adobe\CSXS.11" /v PlayerDebugMode /t REG_SZ /d "1" /f
-  reg add "HKCU\Software\Adobe\CSXS.10" /v PlayerDebugMode /t REG_SZ /d "1" /f
-  reg add "HKCU\Software\Adobe\CSXS.9"  /v PlayerDebugMode /t REG_SZ /d "1" /f
-  ```
-
-* **macOS (Terminal):**
-  ```bash
-  defaults write com.adobe.CSXS.11 PlayerDebugMode 1
-  defaults write com.adobe.CSXS.10 PlayerDebugMode 1
-  defaults write com.adobe.CSXS.9 PlayerDebugMode 1
-  ```
-
-### 3. فتح الإضافة في After Effects:
-1. أعد تشغيل Adobe After Effects.
-2. من القائمة العلوية: **Window** > **Extensions** > **MASAR PRO**.
-3. افتح أي كومبوزيشن نشطة وانقر على **"بناء المسار في AFTER EFFECTS"**.
+#### على نظام macOS:
+انسخ مجلد `MASAR` إلى:
+```bash
+/Library/Application Support/Adobe/CEP/extensions/MASAR
+```
+*(أو لمستخدم النظام الحالي فقط):*
+```bash
+~/Library/Application Support/Adobe/CEP/extensions/MASAR
+```
 
 ---
 
-## 🛠️ التطوير والفحص المباشر | Developer Debugging
+### 2. تفعيل وضع التطوير (PlayerDebugMode):
+للسماح لبرامج أدوبي بتشغيل إضافات CEP غير الموقعة، نفّذ الأمر التالي:
 
-* تدعم الإضافة فحص الويب المباشر عبر بروتوكول Chrome DevTools:
-  افتح متصفح Chrome وتوجه إلى:
-  ```text
-  http://localhost:8092
-  ```
-  ستظهر نافذة فحص `MASAR PRO` التفاعلية لعرض الـ Console وتصحيح الأخطاء مباشرة.
+#### لنظام Windows (عبر PowerShell كمسؤول):
+```powershell
+10..12 | ForEach-Object {
+    reg add "HKCU\Software\Adobe\CSXS.$_" /v PlayerDebugMode /t REG_SZ /d "1" /f
+}
+```
+
+#### لنظام macOS (عبر Terminal):
+```bash
+defaults write com.adobe.CSXS.10 PlayerDebugMode 1
+defaults write com.adobe.CSXS.11 PlayerDebugMode 1
+defaults write com.adobe.CSXS.12 PlayerDebugMode 1
+```
 
 ---
 
-## 📄 الترخيص | License
+### 3. بدء الاستخدام:
+1. افتح أو أعد تشغيل برنامج **Adobe After Effects**.
+2. من القائمة العلوية توجه إلى: **Window** > **Extensions** > **MASAR PRO**.
+3. ستفتح لوحة التحكم فوراً. افتح أي كومبوزيشن نشطة وانقر على **«بناء المسار في AFTER EFFECTS»**.
 
-جميع الحقوق محفوظة © 2026 MASAR PRO Team.
-مصمم ومطور كأداة موشن جرافيكس احترافية.
+---
+
+## 🛠️ بيئة التطوير والفحص | Developer Debugging
+
+تحتوي الإضافة على ملف `.debug` مجهز لفتح أدوات فحص Chrome DevTools مباشرة عبر المنفذ:
+```text
+http://localhost:8092
+```
+افتح الرابط في متصفح Google Chrome أثناء تشغيل الإضافة في After Effects لمتابعة الـ Console وفحص الكائنات والطبقات ومعالجة الأخطاء لحظياً.
+
+---
+
+## 📂 هيكلية شجرة الملفات | Clean File Tree
+
+```text
+MASAR/
+├── .debug                     # ملف تكوين منفذ التصحيح (Port 8092)
+├── .gitignore                 # استبعاد الملفات المؤقتة والمسودات
+├── CHANGELOG.md               # سجل التحديثات والإصدارات
+├── CSXS/
+│   └── manifest.xml           # تعريف الحزمة وهوية MASAR PRO لدى After Effects
+├── LICENSES.md                # تراخيص المكونات والخطوط
+├── MASAR_BUILD_SPEC.md        # المواصفات الفنية المعتمدة للمشروع
+├── README.md                  # دليل المشروع والتوثيق الشامل
+├── client/                    # واجهة المستخدم (HTML5, Modern CSS, Modular JS)
+│   ├── assets/                # خطوط Cairo و Phosphor المدمجة
+│   ├── css/                   # أنماط Spectrum وثيم الزمرد المتطور
+│   ├── js/
+│   │   ├── app.js             # نقطة الدخول وربط المكونات
+│   │   ├── bridge.js          # الجسر الآمن بين المتصفح و ExtendScript
+│   │   └── modules/           # وحدات معالجة البيانات والبطاقات والحالة
+│   └── index.html             # واجهة اللوحة الرئيسية
+├── host/                      # محرك توليد الطبقات في After Effects
+│   ├── bootstrap.jsx          # محرك ExtendScript التنفيذي
+│   ├── api.jsxinc             # دوال التحقق والعمليات الثانوية
+│   └── core/ & rig/           # خوارزميات الحسابات الفلكية والهندسية
+└── presets/                   # نماذج وقوالب جاهزة مدمجة
+```
+
+---
+
+<div align="center">
+
+### صُمم وطُوّر بحب وشغف لخدمة مجتمع الموشن جرافيكس العربي والعالمي ❤️
+**Crafted with excellence for professional motion designers worldwide.**
+
+[⬆ العودة إلى الأعلى](#masar-pro--مسار-موشن-جرافيك-تايم-لاين-)
+
+</div>

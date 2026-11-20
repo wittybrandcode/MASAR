@@ -22,6 +22,10 @@ _backup_pre_flat_v4/
 *.tmp
 *.log
 
+# Internal Planning & Development Docs (Excluded from Public Repo)
+docs/
+DOCS/
+
 # Editor & IDE settings
 .vscode/
 .idea/
