@@ -5,9 +5,4 @@
             <Host Name="AEFT" Port="8092"/>
         </HostList>
     </Extension>
-    <Extension Id="com.timeruler.aftereffects.panel">
-        <HostList>
-            <Host Name="AEFT" Port="8092"/>
-        </HostList>
-    </Extension>
 </ExtensionList>

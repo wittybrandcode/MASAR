@@ -6,7 +6,6 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <ExtensionList>
         <Extension Id="com.masar.aftereffects.panel" Version="2.5.0" />
-        <Extension Id="com.timeruler.aftereffects.panel" Version="2.5.0" />
     </ExtensionList>
     <ExecutionEnvironment>
         <HostList>
@@ -32,35 +31,6 @@
                 <UI>
                     <Type>Panel</Type>
                     <Menu>MASAR PRO</Menu>
-                    <Geometry>
-                        <Size>
-                            <Width>420</Width>
-                            <Height>720</Height>
-                        </Size>
-                        <MinSize>
-                            <Width>320</Width>
-                            <Height>420</Height>
-                        </MinSize>
-                        <MaxSize>
-                            <Width>1200</Width>
-                            <Height>1600</Height>
-                        </MaxSize>
-                    </Geometry>
-                </UI>
-            </DispatchInfo>
-        </Extension>
-        <Extension Id="com.timeruler.aftereffects.panel">
-            <DispatchInfo>
-                <Resources>
-                    <MainPath>./client/index.html</MainPath>
-                    <ScriptPath>./host/bootstrap.jsx</ScriptPath>
-                </Resources>
-                <Lifecycle>
-                    <AutoVisible>true</AutoVisible>
-                </Lifecycle>
-                <UI>
-                    <Type>Panel</Type>
-                    <Menu>MASAR (Legacy Alias)</Menu>
                     <Geometry>
                         <Size>
                             <Width>420</Width>
