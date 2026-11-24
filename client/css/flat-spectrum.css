@@ -1034,30 +1034,37 @@ div i.fa-regular {
     display: inline-flex !important;
     align-items: center !important;
     direction: ltr !important;
-    gap: 1px !important;
+    gap: 2px !important;
     background: #090a0f !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-    height: 20px !important;
-    padding: 0 4px !important;
-    font-size: 9.5px !important;
+    height: 22px !important;
+    padding: 0 0 0 5px !important;
+    font-size: 10px !important;
     font-weight: 700 !important;
     flex-shrink: 0 !important;
-    border-radius: 3px !important;
-    transition: border-color 0.15s ease;
+    border-radius: 4px !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+    box-sizing: border-box !important;
+}
+
+.prop-val-box:hover {
+    border-color: rgba(255, 255, 255, 0.14) !important;
 }
 
 .prop-val-box:focus-within {
-    border-color: rgba(16, 185, 129, 0.5) !important;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.25) !important;
+    border-color: rgba(16, 185, 129, 0.6) !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.3) !important;
 }
 
 .prop-val-box input {
-    width: 26px !important;
+    width: 34px !important;
+    min-width: 30px !important;
     background: transparent !important;
     border: none !important;
-    color: var(--text-secondary) !important;
-    font-size: 9.5px !important;
+    color: #ffffff !important;
+    font-size: 10px !important;
     font-weight: 700 !important;
     text-align: center !important;
     outline: none !important;
@@ -1073,7 +1080,55 @@ div i.fa-regular {
 
 .prop-val-box .unit {
     font-size: 8.5px !important;
+    font-weight: 600 !important;
     color: var(--text-dim) !important;
+    margin-right: 2px !important;
+    user-select: none;
+}
+
+/* Micro-Stepper Caret Controls (Adobe Spectrum / Figma Dark Mode) */
+.prop-spin-btns {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    justify-content: space-evenly !important;
+    align-items: center !important;
+    width: 13px !important;
+    height: 100% !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    box-sizing: border-box !important;
+    padding: 1px 0 !important;
+}
+
+.prop-spin-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 9px !important;
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    transition: color 0.1s ease, background 0.1s ease;
+    border-radius: 1px !important;
+}
+
+.prop-spin-btn:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.prop-spin-btn:active {
+    color: var(--accent) !important;
+    background: rgba(16, 185, 129, 0.3) !important;
+}
+
+.prop-spin-btn svg {
+    display: block !important;
+    pointer-events: none;
 }
 
 .micro-color-swatch {

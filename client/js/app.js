@@ -106,6 +106,88 @@
         });
     }
 
+    function initPropValSpinners() {
+        document.querySelectorAll('.prop-val-box').forEach(function (box) {
+            if (box.querySelector('.prop-spin-btns')) return;
+            var inp = box.querySelector('input[type="number"]');
+            if (!inp) return;
+
+            var spinWrap = document.createElement('div');
+            spinWrap.className = 'prop-spin-btns';
+            spinWrap.innerHTML =
+                '<button type="button" class="prop-spin-btn prop-spin-up" tabindex="-1" title="زيادة">' +
+                '<svg width="7" height="4" viewBox="0 0 8 5" fill="currentColor"><path d="M4 0L8 5H0L4 0Z"/></svg>' +
+                '</button>' +
+                '<button type="button" class="prop-spin-btn prop-spin-down" tabindex="-1" title="إنقاص">' +
+                '<svg width="7" height="4" viewBox="0 0 8 5" fill="currentColor"><path d="M4 5L0 0H8L4 5Z"/></svg>' +
+                '</button>';
+            box.appendChild(spinWrap);
+
+            var upBtn = spinWrap.querySelector('.prop-spin-up');
+            var downBtn = spinWrap.querySelector('.prop-spin-down');
+
+            function doStep(direction) {
+                var step = parseFloat(inp.step) || 1;
+                var val = parseFloat(inp.value) || 0;
+                var min = inp.min !== '' ? parseFloat(inp.min) : -Infinity;
+                var max = inp.max !== '' ? parseFloat(inp.max) : Infinity;
+                var stepStr = inp.getAttribute('step') || '';
+                var decimals = (stepStr.indexOf('.') !== -1) ? stepStr.split('.')[1].length : 0;
+
+                var newVal;
+                if (direction > 0) {
+                    newVal = Math.min(max, val + step);
+                } else {
+                    newVal = Math.max(min, val - step);
+                }
+
+                if (decimals > 0) {
+                    inp.value = newVal.toFixed(decimals);
+                } else {
+                    inp.value = Math.round(newVal);
+                }
+
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                inp.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            function attachHold(btn, dir) {
+                var holdTimer = null;
+                var repeatInterval = null;
+                function clearHold() {
+                    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+                    if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
+                }
+                btn.addEventListener('mousedown', function (e) {
+                    if (e.button !== 0) return;
+                    e.preventDefault();
+                    doStep(dir);
+                    clearHold();
+                    holdTimer = setTimeout(function () {
+                        repeatInterval = setInterval(function () { doStep(dir); }, 50);
+                    }, 280);
+                });
+                btn.addEventListener('mouseup', clearHold);
+                btn.addEventListener('mouseleave', clearHold);
+            }
+
+            attachHold(upBtn, 1);
+            attachHold(downBtn, -1);
+
+            // Wheel scrub on prop-val-box for swift adjustments
+            box.addEventListener('wheel', function (e) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    doStep(1);
+                } else {
+                    doStep(-1);
+                }
+            }, { passive: false });
+        });
+    }
+
+    window.initPropValSpinners = initPropValSpinners;
+
     function bindEvents() {
         // Toggle All Cards
         var btnToggleAll = $('btn-toggle-all');
@@ -536,6 +618,7 @@
 
         initTabs();
         initCollapsibles();
+        initPropValSpinners();
         bindEvents();
         initPresetsModal();
 
