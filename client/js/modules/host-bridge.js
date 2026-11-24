@@ -125,8 +125,10 @@ var TIME_RULER_HOST_BRIDGE = (function () {
             spacingMode: state.spacingMode,
             length: state.length,
             spacingGap: state.spacingGap,
+            endMargin: (state.endMargin !== undefined) ? state.endMargin : 60,
             lineWidth: state.lineWidth,
             lineColor: state.lineColor,
+            lineOpacity: (state.lineOpacity !== undefined) ? state.lineOpacity : 100,
 
             lineStyle: state.lineStyle || 'solid',
             lineCap: state.lineCap || 'round',
@@ -134,7 +136,8 @@ var TIME_RULER_HOST_BRIDGE = (function () {
             dashGap: state.dashGap || 12,
             startTerminal: state.startTerminal || 'none',
             endTerminal: state.endTerminal || 'none',
-            terminalSize: Math.max(10, (state.lineWidth || 4) * 2.5),
+            terminalSize: (state.terminalSize !== undefined) ? state.terminalSize : Math.max(10, (state.lineWidth || 4) * 2.5),
+            terminalColor: state.terminalColor || '',
 
             nodeShape: state.nodeShape,
             circleRadius: state.circleRadius,

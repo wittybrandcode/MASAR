@@ -197,6 +197,18 @@
                             </div>
                         </div>
 
+                        <!-- Row 2c: End Margin Slider (Distance from outer nodes to line terminals) -->
+                        <div class="prop-row" id="cell-end-margin">
+                            <span class="prop-lbl"><i class="fa-solid fa-arrows-left-right-to-line"></i> هامش الأطراف:</span>
+                            <div class="prop-slider-unit">
+                                <input type="range" class="prop-slider sl" id="rng-end-margin" min="0" max="350" step="5" value="60">
+                                <div class="prop-val-box">
+                                    <input type="number" id="inp-end-margin" class="ni" value="60" min="0" max="500" step="5">
+                                    <span class="unit">px</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Row 3: Line Width & Color -->
                         <div class="prop-row">
                             <span class="prop-lbl"><i class="fa-solid fa-pen-nib"></i> سماكة الخط:</span>
@@ -254,6 +266,18 @@
                                     <button type="button" class="icon-seg-btn tb" data-term="arrow" title="سهم"><i class="fa-solid fa-caret-right"></i></button>
                                     <button type="button" class="icon-seg-btn tb" data-term="dot" title="نقطة"><i class="fa-solid fa-circle" style="font-size: 8px;"></i></button>
                                     <button type="button" class="icon-seg-btn tb" data-term="bar" title="سن"><i class="fa-solid fa-grip-lines-vertical"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 4b: Terminal Size & Independent Color -->
+                        <div class="prop-row" id="row-terminal-custom" style="display: none;">
+                            <span class="prop-lbl"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> حجم ولون الأطراف:</span>
+                            <div class="prop-slider-unit">
+                                <input type="range" class="prop-slider sl" id="rng-terminal-size" min="6" max="50" step="1" value="14">
+                                <div class="prop-val-box"><input type="number" id="inp-terminal-size" class="ni" value="14" min="4" max="80"><span class="unit">px</span></div>
+                                <div class="micro-color-swatch ci-wrap" id="wrap-terminal-color" style="background: #ffffff;" title="لون أطراف المسار المستقل">
+                                    <input type="color" id="inp-terminal-color" value="#ffffff">
                                 </div>
                             </div>
                         </div>
@@ -495,6 +519,25 @@
                                         <input type="range" class="prop-slider sl" id="rng-desc-box-radius" min="0" max="30" step="1" value="6" title="تدوير الزوايا">
                                         <div class="prop-val-box"><input type="number" id="inp-desc-box-radius" class="ni" value="6"><span class="unit">R</span></div>
                                         <div class="micro-color-swatch ci-wrap" id="wrap-desc-box-stroke-color" style="background: #10b981;" title="لون الإطار"><input type="color" id="inp-desc-box-stroke-color" value="#10b981"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Row 4: Global Box Padding & Stroke Width -->
+                            <div class="prop-row">
+                                <span class="prop-lbl"><i class="fa-solid fa-border-all"></i> الحواشي والإطار:</span>
+                                <div style="display: flex; gap: 6px; flex: 1; align-items: center;">
+                                    <div class="prop-slider-unit" title="الحاشية الأفقية Padding H">
+                                        <input type="range" class="prop-slider sl" id="rng-box-pad-h" min="4" max="40" step="1" value="14">
+                                        <div class="prop-val-box"><input type="number" id="inp-box-pad-h" class="ni" value="14" min="0" max="60"><span class="unit">H</span></div>
+                                    </div>
+                                    <div class="prop-slider-unit" title="الحاشية الرأسية Padding V">
+                                        <input type="range" class="prop-slider sl" id="rng-box-pad-v" min="2" max="30" step="1" value="6">
+                                        <div class="prop-val-box"><input type="number" id="inp-box-pad-v" class="ni" value="6" min="0" max="50"><span class="unit">V</span></div>
+                                    </div>
+                                    <div class="prop-slider-unit" title="سماكة الإطار Stroke Width">
+                                        <input type="range" class="prop-slider sl" id="rng-box-stroke-w" min="0" max="8" step="0.5" value="1.5">
+                                        <div class="prop-val-box"><input type="number" id="inp-box-stroke-w" class="ni" value="1.5" min="0" max="15" step="0.5"><span class="unit">W</span></div>
                                     </div>
                                 </div>
                             </div>

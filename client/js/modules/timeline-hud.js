@@ -91,13 +91,14 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             ctx.stroke();
             ctx.setLineDash([]);
 
+            var termCol = state.terminalColor || '#ffffff';
             if (state.startTerminal === 'dot') {
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = termCol;
                 ctx.beginPath();
                 ctx.arc(pad - 12, lineY, 3.5, 0, Math.PI * 2);
                 ctx.fill();
             } else if (state.startTerminal === 'arrow') {
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = termCol;
                 ctx.beginPath();
                 ctx.moveTo(pad - 16, lineY);
                 ctx.lineTo(pad - 8, lineY - 5);
@@ -107,12 +108,12 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             }
 
             if (state.endTerminal === 'dot') {
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = termCol;
                 ctx.beginPath();
                 ctx.arc(cssW - pad + 12, lineY, 3.5, 0, Math.PI * 2);
                 ctx.fill();
             } else if (state.endTerminal === 'arrow') {
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = termCol;
                 ctx.beginPath();
                 ctx.moveTo(cssW - pad + 16, lineY);
                 ctx.lineTo(cssW - pad + 8, lineY - 5);
@@ -122,14 +123,17 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             }
 
             var count = state.nodes.length;
-            var span = (cssW - (2 * pad));
+            var hudMargin = (state.length > 0 && typeof state.endMargin === 'number') ? Math.min((cssW - 2 * pad) * 0.4, Math.round((state.endMargin / state.length) * (cssW - 2 * pad))) : 0;
+            var startX = pad + hudMargin;
+            var endX = cssW - pad - hudMargin;
+            var span = Math.max(0, endX - startX);
             var step = (count > 1) ? (span / (count - 1)) : 0;
             var nodeSize = 24;
             var half = 12;
 
             for (var i = 0; i < count; i++) {
                 var node = state.nodes[i];
-                var x = (count === 1) ? (cssW / 2) : (pad + (i * step));
+                var x = (count === 1) ? (cssW / 2) : (startX + (i * step));
                 var y = lineY;
                 var isSel = (i === (state.selectedNodeIndex || 0));
 
@@ -244,13 +248,14 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             ctx.stroke();
             ctx.setLineDash([]);
 
+            var termColY = state.terminalColor || '#ffffff';
             if (state.startTerminal === 'dot') {
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = termColY;
                 ctx.beginPath();
                 ctx.arc(lineX, padY - 12, 3.5, 0, Math.PI * 2);
                 ctx.fill();
             } else if (state.startTerminal === 'arrow') {
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = termColY;
                 ctx.beginPath();
                 ctx.moveTo(lineX, padY - 16);
                 ctx.lineTo(lineX - 5, padY - 8);
@@ -260,12 +265,12 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             }
 
             if (state.endTerminal === 'dot') {
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = termColY;
                 ctx.beginPath();
                 ctx.arc(lineX, cssH - padY + 12, 3.5, 0, Math.PI * 2);
                 ctx.fill();
             } else if (state.endTerminal === 'arrow') {
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = termColY;
                 ctx.beginPath();
                 ctx.moveTo(lineX, cssH - padY + 16);
                 ctx.lineTo(lineX - 5, cssH - padY + 8);
@@ -275,14 +280,17 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             }
 
             var count = state.nodes.length;
-            var span = (cssH - (2 * padY));
+            var hudMarginY = (state.length > 0 && typeof state.endMargin === 'number') ? Math.min((cssH - 2 * padY) * 0.4, Math.round((state.endMargin / state.length) * (cssH - 2 * padY))) : 0;
+            var startY = padY + hudMarginY;
+            var endY = cssH - padY - hudMarginY;
+            var span = Math.max(0, endY - startY);
             var step = (count > 1) ? (span / (count - 1)) : 0;
             var nodeSize = 24;
             var half = 12;
 
             for (var i = 0; i < count; i++) {
                 var node = state.nodes[i];
-                var y = (count === 1) ? (cssH / 2) : (padY + (i * step));
+                var y = (count === 1) ? (cssH / 2) : (startY + (i * step));
                 var x = lineX;
                 var isSel = (i === (state.selectedNodeIndex || 0));
 

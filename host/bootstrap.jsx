@@ -840,7 +840,7 @@ TR.API = {
             var compH = comp.height;
 
             // Spacing & Length calculation
-            var margin = 60;
+            var margin = (cfg.endMargin !== undefined && cfg.endMargin !== null && !isNaN(parseFloat(cfg.endMargin))) ? Math.max(0, parseFloat(cfg.endMargin)) : 60;
             var spacingMode = cfg.spacingMode || "auto"; // "auto" or "fixed"
             var spacingGap = parseFloat(cfg.spacingGap) || 240;
             var length = 0;
@@ -864,10 +864,11 @@ TR.API = {
             var lineCap = cfg.lineCap || "round"; // "butt" | "round" | "projecting"
             var dashSize = parseFloat(cfg.dashSize) || 16;
             var dashGap = parseFloat(cfg.dashGap) || 10;
-            var lineOpacity = (typeof cfg.lineOpacity === "number") ? cfg.lineOpacity : 100;
+            var lineOpacity = (typeof cfg.lineOpacity === "number" && !isNaN(cfg.lineOpacity)) ? Math.max(0, Math.min(100, cfg.lineOpacity)) : 100;
             var startTerminal = cfg.startTerminal || "none";
             var endTerminal = cfg.endTerminal || "none";
-            var terminalSize = parseFloat(cfg.terminalSize) || Math.max(12, lineWidth * 3);
+            var terminalSize = (cfg.terminalSize !== undefined && cfg.terminalSize !== null && !isNaN(parseFloat(cfg.terminalSize))) ? parseFloat(cfg.terminalSize) : Math.max(12, lineWidth * 3);
+            var terminalColor = (cfg.terminalColor && String(cfg.terminalColor).length > 0) ? parseColor(cfg.terminalColor, lineColor) : lineColor;
 
             var nodeShape = cfg.nodeShape || "circle"; // "circle" | "square" | "diamond" | "tick"
             var circleRadius = parseFloat(cfg.circleRadius) || 12;
@@ -1373,10 +1374,10 @@ TR.API = {
                 addShapeStroke(baseGroup, lineColor, lineWidth, lineCap, lineStyle, dashSize, dashGap, lineOpacity);
 
                 if (startTerminal && startTerminal !== "none") {
-                    addShapeTerminal(baseGroup, startTerminal, startPt, -1, orientation, lineColor, terminalSize, "StartTerminal");
+                    addShapeTerminal(baseGroup, startTerminal, startPt, -1, orientation, terminalColor, terminalSize, "StartTerminal");
                 }
                 if (endTerminal && endTerminal !== "none") {
-                    addShapeTerminal(baseGroup, endTerminal, endPt, 1, orientation, lineColor, terminalSize, "EndTerminal");
+                    addShapeTerminal(baseGroup, endTerminal, endPt, 1, orientation, terminalColor, terminalSize, "EndTerminal");
                 }
 
                 // 3. Nodes Shape Layer
@@ -1449,10 +1450,10 @@ TR.API = {
                 addShapeStroke(baseGroup, lineColor, lineWidth, lineCap, lineStyle, dashSize, dashGap, lineOpacity);
 
                 if (startTerminal && startTerminal !== "none") {
-                    addShapeTerminal(baseGroup, startTerminal, startPt, -1, orientation, lineColor, terminalSize, "StartTerminal");
+                    addShapeTerminal(baseGroup, startTerminal, startPt, -1, orientation, terminalColor, terminalSize, "StartTerminal");
                 }
                 if (endTerminal && endTerminal !== "none") {
-                    addShapeTerminal(baseGroup, endTerminal, endPt, 1, orientation, lineColor, terminalSize, "EndTerminal");
+                    addShapeTerminal(baseGroup, endTerminal, endPt, 1, orientation, terminalColor, terminalSize, "EndTerminal");
                 }
             }
 

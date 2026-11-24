@@ -76,6 +76,12 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
             cellDashSize.style.display = (state.lineStyle === 'dotted') ? 'none' : 'flex';
         }
 
+        var rowTermCustom = $('row-terminal-custom');
+        if (rowTermCustom) {
+            var hasTerm = (state.startTerminal && state.startTerminal !== 'none') || (state.endTerminal && state.endTerminal !== 'none');
+            rowTermCustom.style.display = hasTerm ? 'flex' : 'none';
+        }
+
         var circGrp = $('circle-settings');
         var tickGrp = $('tick-settings');
         var subHead = $('txt-shape-subhead');
@@ -112,10 +118,15 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
     function syncFormValues(state) {
         setPairVal('rng-length', 'inp-length', state.length);
         setPairVal('rng-gap', 'inp-gap', state.spacingGap);
+        setPairVal('rng-end-margin', 'inp-end-margin', (state.endMargin !== undefined) ? state.endMargin : 60);
         setPairVal('rng-line-w', 'inp-line-w', state.lineWidth);
 
         setPairVal('rng-dash-size', 'inp-dash-size', state.dashSize || 16);
         setPairVal('rng-dash-gap', 'inp-dash-gap', state.dashGap || 12);
+
+        setPairVal('rng-terminal-size', 'inp-terminal-size', (state.terminalSize !== undefined) ? state.terminalSize : 14);
+        var inpTermCol = $('inp-terminal-color'); if (inpTermCol) inpTermCol.value = state.terminalColor || state.lineColor || '#ffffff';
+        var wrapTermCol = $('wrap-terminal-color'); if (wrapTermCol) wrapTermCol.style.background = state.terminalColor || state.lineColor || '#ffffff';
 
         setPairVal('rng-circ-r', 'inp-circ-r', state.circleRadius);
         setPairVal('rng-circ-sw', 'inp-circ-sw', state.circleStrokeWidth);
@@ -156,6 +167,13 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
         var inpDBoxFill = $('inp-desc-box-fill-color'); if (inpDBoxFill) inpDBoxFill.value = state.descBoxFillColor || state.frontBoxFillColor || state.boxFillColor || '#0b1120';
         var inpDBoxStrk = $('inp-desc-box-stroke-color'); if (inpDBoxStrk) inpDBoxStrk.value = state.descBoxStrokeColor || '#64748b';
 
+        setPairVal('rng-box-pad-h', 'inp-box-pad-h', (state.boxPaddingH !== undefined) ? state.boxPaddingH : 14);
+        setPairVal('rng-box-pad-v', 'inp-box-pad-v', (state.boxPaddingV !== undefined) ? state.boxPaddingV : 6);
+        setPairVal('rng-box-stroke-w', 'inp-box-stroke-w', (state.boxStrokeWidth !== undefined) ? state.boxStrokeWidth : 1.5);
+
+        setSegmentActive('seg-start-terminal', 'data-term', state.startTerminal || 'none');
+        setSegmentActive('seg-end-terminal', 'data-term', state.endTerminal || 'none');
+
         var hintBoxMode = $('hint-box-mode');
         if (hintBoxMode) {
             if (state.boxMode === 'glass') {
@@ -179,6 +197,9 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
                 lblSide2.textContent = 'يمين';
             }
         }
+
+        setSegmentActive('seg-start-terminal', 'data-term', state.startTerminal || 'none');
+        setSegmentActive('seg-end-terminal', 'data-term', state.endTerminal || 'none');
 
         var selStart = $('sel-start-terminal');
         if (selStart) selStart.value = state.startTerminal || 'none';
@@ -208,7 +229,11 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
 
         bindSliderAndNumber('rng-length', 'inp-length', 'length', false, 80, state, onLive);
         bindSliderAndNumber('rng-gap', 'inp-gap', 'spacingGap', false, 80, state, onLive);
+        bindSliderAndNumber('rng-end-margin', 'inp-end-margin', 'endMargin', false, 80, state, onLive);
         bindSliderAndNumber('rng-line-w', 'inp-line-w', 'lineWidth', false, 80, state, onLive);
+
+        bindSliderAndNumber('rng-terminal-size', 'inp-terminal-size', 'terminalSize', false, 80, state, onLive);
+        bindColorPicker('inp-terminal-color', 'terminalColor', state, onLive);
 
         bindSliderAndNumber('rng-dash-size', 'inp-dash-size', 'dashSize', false, 80, state, onLive);
         bindSliderAndNumber('rng-dash-gap', 'inp-dash-gap', 'dashGap', false, 80, state, onLive);
@@ -250,6 +275,9 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
 
         bindSliderAndNumber('rng-box-padding-h', 'inp-box-padding-h', 'boxPaddingH', false, 80, state, onLive);
         bindSliderAndNumber('rng-box-padding-v', 'inp-box-padding-v', 'boxPaddingV', false, 80, state, onLive);
+        bindSliderAndNumber('rng-box-pad-h', 'inp-box-pad-h', 'boxPaddingH', false, 80, state, onLive);
+        bindSliderAndNumber('rng-box-pad-v', 'inp-box-pad-v', 'boxPaddingV', false, 80, state, onLive);
+        bindSliderAndNumber('rng-box-stroke-w', 'inp-box-stroke-w', 'boxStrokeWidth', true, 80, state, onLive);
 
         // Segmented Control Buttons (Tab 2)
         var segOri = $('seg-orientation');
@@ -346,6 +374,32 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
                 setSegmentActive('seg-box-mode', 'data-box-mode', mode);
                 syncFormValues(state);
                 onLive(0, true);
+            });
+        }
+
+        var segStart = $('seg-start-terminal');
+        if (segStart) {
+            segStart.addEventListener('click', function (e) {
+                var btn = e.target.closest('.icon-seg-btn, .tb, button[data-term]');
+                if (!btn || !btn.dataset.term) return;
+                state.startTerminal = btn.dataset.term;
+                setSegmentActive('seg-start-terminal', 'data-term', state.startTerminal);
+                var sel = $('sel-start-terminal'); if (sel) sel.value = state.startTerminal;
+                updateConditionalVisibility(state);
+                onLive(0, false);
+            });
+        }
+
+        var segEnd = $('seg-end-terminal');
+        if (segEnd) {
+            segEnd.addEventListener('click', function (e) {
+                var btn = e.target.closest('.icon-seg-btn, .tb, button[data-term]');
+                if (!btn || !btn.dataset.term) return;
+                state.endTerminal = btn.dataset.term;
+                setSegmentActive('seg-end-terminal', 'data-term', state.endTerminal);
+                var sel = $('sel-end-terminal'); if (sel) sel.value = state.endTerminal;
+                updateConditionalVisibility(state);
+                onLive(0, false);
             });
         }
 

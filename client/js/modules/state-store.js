@@ -29,8 +29,10 @@ var TIME_RULER_STATE_STORE = (function () {
         spacingMode: 'auto',
         length: 1500,
         spacingGap: 250,
+        endMargin: 60,            // px: Distance between outer nodes and baseline terminals
         lineWidth: 4,
         lineColor: '#ffffff',
+        lineOpacity: 100,         // % (10 - 100)
 
         // Baseline Line Customization
         lineStyle: 'solid',       // 'solid' | 'dashed' | 'dotted'
@@ -39,6 +41,8 @@ var TIME_RULER_STATE_STORE = (function () {
         dashGap: 12,              // px
         startTerminal: 'none',    // 'none' | 'arrow' | 'dot' | 'bar'
         endTerminal: 'none',      // 'none' | 'arrow' | 'dot' | 'bar'
+        terminalSize: 14,         // px: Size of terminal shapes
+        terminalColor: '',        // Independent color override (empty = match lineColor)
 
         // Global Shape: 'circle' | 'square' | 'diamond' | 'tick' (Default is single Circle)
         nodeShape: 'circle',
