@@ -967,6 +967,34 @@ TR.API = {
                     baseRadius = globalDescBoxRadius;
                     baseFillOp = globalDescBoxFillOpacity;
                     baseStrokeW = globalDescBoxStrokeWidth;
+                } else if (streamKind === "badge") {
+                    if (streamObj && (streamObj.badgeBoxColor || streamObj.badgeBoxFillColor || streamObj.boxFillColor || streamObj.boxColor)) {
+                        effFillColor = parseColor(streamObj.badgeBoxColor || streamObj.badgeBoxFillColor || streamObj.boxFillColor || streamObj.boxColor, baseFill);
+                    } else if (nodeData && (nodeData.badgeBoxColor || nodeData.customBoxColor || nodeData.boxFillColor || nodeData.boxColor)) {
+                        effFillColor = parseColor(nodeData.badgeBoxColor || nodeData.customBoxColor || nodeData.boxFillColor || nodeData.boxColor, baseFill);
+                    }
+
+                    if (streamObj && (streamObj.badgeBoxStroke || streamObj.badgeBoxStrokeColor || streamObj.boxStrokeColor || streamObj.boxStroke)) {
+                        effStrokeColor = parseColor(streamObj.badgeBoxStroke || streamObj.badgeBoxStrokeColor || streamObj.boxStrokeColor || streamObj.boxStroke, baseStroke);
+                    } else if (nodeData && (nodeData.badgeBoxStroke || nodeData.customBoxStroke || nodeData.boxStrokeColor || nodeData.boxStroke)) {
+                        effStrokeColor = parseColor(nodeData.badgeBoxStroke || nodeData.customBoxStroke || nodeData.boxStrokeColor || nodeData.boxStroke, baseStroke);
+                    }
+
+                    if (streamObj && typeof streamObj.badgeBoxRadius === "number") {
+                        effRadius = streamObj.badgeBoxRadius;
+                    } else if (streamObj && typeof streamObj.boxRadius === "number") {
+                        effRadius = streamObj.boxRadius;
+                    } else if (nodeData && typeof nodeData.badgeBoxRadius === "number") {
+                        effRadius = nodeData.badgeBoxRadius;
+                    } else if (nodeData && typeof nodeData.boxRadius === "number") {
+                        effRadius = nodeData.boxRadius;
+                    }
+
+                    if (streamObj && typeof streamObj.badgeBoxFillOpacity === "number") {
+                        effFillOpacity = streamObj.badgeBoxFillOpacity;
+                    } else if (streamObj && typeof streamObj.boxFillOpacity === "number") {
+                        effFillOpacity = streamObj.boxFillOpacity;
+                    }
                 } else if (streamKind === "behind") {
                     sBox = streamObj ? (streamObj.behindBox || streamObj.box || streamObj.boxEnabled) : "inherit";
                     nBox = nodeData ? (nodeData.behindBox || nodeData.box || nodeData.boxEnabled) : "inherit";
@@ -1051,6 +1079,34 @@ TR.API = {
 
                     if (streamObj && typeof streamObj.descBoxFillOpacity === "number") {
                         effFillOpacity = streamObj.descBoxFillOpacity;
+                    } else if (streamObj && typeof streamObj.boxFillOpacity === "number") {
+                        effFillOpacity = streamObj.boxFillOpacity;
+                    }
+                } else if (streamKind === "badge") {
+                    if (streamObj && (streamObj.badgeBoxColor || streamObj.badgeBoxFillColor || streamObj.boxFillColor || streamObj.boxColor)) {
+                        effFillColor = parseColor(streamObj.badgeBoxColor || streamObj.badgeBoxFillColor || streamObj.boxFillColor || streamObj.boxColor, baseFill);
+                    } else if (nodeData && (nodeData.badgeBoxColor || nodeData.customBoxColor || nodeData.boxFillColor || nodeData.boxColor)) {
+                        effFillColor = parseColor(nodeData.badgeBoxColor || nodeData.customBoxColor || nodeData.boxFillColor || nodeData.boxColor, baseFill);
+                    }
+
+                    if (streamObj && (streamObj.badgeBoxStroke || streamObj.badgeBoxStrokeColor || streamObj.boxStrokeColor || streamObj.boxStroke)) {
+                        effStrokeColor = parseColor(streamObj.badgeBoxStroke || streamObj.badgeBoxStrokeColor || streamObj.boxStrokeColor || streamObj.boxStroke, baseStroke);
+                    } else if (nodeData && (nodeData.badgeBoxStroke || nodeData.customBoxStroke || nodeData.boxStrokeColor || nodeData.boxStroke)) {
+                        effStrokeColor = parseColor(nodeData.badgeBoxStroke || nodeData.customBoxStroke || nodeData.boxStrokeColor || nodeData.boxStroke, baseStroke);
+                    }
+
+                    if (streamObj && typeof streamObj.badgeBoxRadius === "number") {
+                        effRadius = streamObj.badgeBoxRadius;
+                    } else if (streamObj && typeof streamObj.boxRadius === "number") {
+                        effRadius = streamObj.boxRadius;
+                    } else if (nodeData && typeof nodeData.badgeBoxRadius === "number") {
+                        effRadius = nodeData.badgeBoxRadius;
+                    } else if (nodeData && typeof nodeData.boxRadius === "number") {
+                        effRadius = nodeData.boxRadius;
+                    }
+
+                    if (streamObj && typeof streamObj.badgeBoxFillOpacity === "number") {
+                        effFillOpacity = streamObj.badgeBoxFillOpacity;
                     } else if (streamObj && typeof streamObj.boxFillOpacity === "number") {
                         effFillOpacity = streamObj.boxFillOpacity;
                     }
@@ -1632,33 +1688,39 @@ TR.API = {
                     nLayer.enabled = false;
                 }
 
-                // 2. FRONT SOURCE: Top / Front Stream (Title, Text, Bullet List, Badge, Icon)
+                // 2. FRONT SOURCE: Top / Front Stream (Badge, Title, Desc/List, Icon)
                 var frontSrc = (nodeData.sources && nodeData.sources.front) ? nodeData.sources.front : null;
                 var fType = frontSrc ? frontSrc.type : (nodeData.description ? "title_text" : "title");
                 var fVis = frontSrc ? (frontSrc.visible !== false && fType !== "none") : (nodeData.title ? true : false);
 
+                var badgeText = "";
                 var titleText = "";
                 var descText = "";
 
                 if (fVis) {
-                    var partsTitle = [];
                     var rawIcon = (frontSrc && frontSrc.icon) ? trimStr(frontSrc.icon) : "";
                     var rawBadge = (frontSrc && (frontSrc.number !== undefined || frontSrc.badge !== undefined || frontSrc.value !== undefined || (fType === "badge" && frontSrc.text !== undefined)))
                         ? trimStr(frontSrc.number !== undefined ? frontSrc.number : (frontSrc.badge !== undefined ? frontSrc.badge : (frontSrc.value !== undefined ? frontSrc.value : frontSrc.text)))
                         : "";
                     var rawTitle = (frontSrc && frontSrc.title) ? trimStr(frontSrc.title) : ((nodeData && nodeData.title && frontSrc.showTitle !== false) ? trimStr(nodeData.title) : "");
 
-                    if (rawIcon && (frontSrc.showIcon === true || fType === "icon_title")) {
-                        partsTitle.push(rawIcon);
-                    }
-                    if (rawBadge && (frontSrc.showBadge === true || fType === "number_title" || fType === "badge" || fType === "number_text")) {
-                        partsTitle.push(rawBadge);
-                    }
-                    if (rawTitle && (frontSrc.showTitle === true || (frontSrc.showTitle !== false && fType !== "text" && fType !== "list" && fType !== "badge" && fType !== "number_text"))) {
-                        partsTitle.push(rawTitle);
+                    var hasBadgeVal = (rawBadge.length > 0 && (frontSrc.showBadge === true || fType === "badge" || fType === "number_title" || fType === "number_text"));
+                    var hasTitlePart = (rawTitle.length > 0 && (frontSrc.showTitle === true || (frontSrc.showTitle !== false && fType !== "text" && fType !== "list" && fType !== "badge" && fType !== "number_text")));
+
+                    if (hasBadgeVal) {
+                        badgeText = rawBadge;
                     }
 
-                    titleText = partsTitle.join(" ");
+                    if (hasTitlePart) {
+                        var titleParts = [];
+                        if (rawIcon && (frontSrc.showIcon === true || fType === "icon_title")) {
+                            titleParts.push(rawIcon);
+                        }
+                        titleParts.push(rawTitle);
+                        titleText = titleParts.join(" ");
+                    } else if (rawIcon && (frontSrc.showIcon === true || fType === "icon_title")) {
+                        titleText = rawIcon;
+                    }
 
                     var showListNow = (frontSrc && (frontSrc.showList === true || fType === "title_list" || fType === "list"));
                     var showDescNow = (frontSrc && (frontSrc.showDesc === true || fType === "title_text" || fType === "text" || fType === "number_text"));
@@ -1680,12 +1742,13 @@ TR.API = {
                         }
                     } else if (showDescNow) {
                         var rawDesc = (frontSrc && frontSrc.text !== undefined) ? trimStr(frontSrc.text) : ((nodeData && nodeData.description && frontSrc.showDesc !== false) ? trimStr(nodeData.description) : "");
-                        if (rawDesc.length > 0 && rawDesc !== titleText) {
+                        if (rawDesc.length > 0 && rawDesc !== titleText && rawDesc !== badgeText) {
                             descText = rawDesc;
                         }
                     }
                 }
 
+                var hasBadge = (fVis && badgeText.length > 0);
                 var hasTitle = (fVis && titleText.length > 0);
                 var hasDesc = (fVis && descText.length > 0);
 
@@ -1718,9 +1781,6 @@ TR.API = {
                         frontJustify = ParagraphJustification.CENTER_JUSTIFY;
                         behindJustify = ParagraphJustification.CENTER_JUSTIFY;
                     } else {
-                        // In vertical mode:
-                        // If Front content is on the Left, right-justify towards the line (standard RTL / Left Side)
-                        // If Front content is on the Right, left-justify towards the line (standard LTR / Right Side)
                         if (effSide === "left") {
                             frontJustify = ParagraphJustification.RIGHT_JUSTIFY;
                             behindJustify = ParagraphJustification.LEFT_JUSTIFY;
@@ -1729,6 +1789,52 @@ TR.API = {
                             behindJustify = ParagraphJustification.RIGHT_JUSTIFY;
                         }
                     }
+                }
+
+                // Front Badge Layer (Independent styling, box & position)
+                var bdgLayer = null;
+                try { bdgLayer = comp.layer("MS_Node_" + (i + 1) + "_Badge") || comp.layer("TR_Node_" + (i + 1) + "_Badge"); } catch (eBdgL) { bdgLayer = null; }
+
+                if (hasBadge) {
+                    if (!bdgLayer) {
+                        bdgLayer = comp.layers.addText(badgeText);
+                        bdgLayer.name = "MS_Node_" + (i + 1) + "_Badge";
+                        bdgLayer.parent = ctrl;
+                    }
+                    var bdgProp = bdgLayer.property("Source Text");
+                    var bdgDoc = null;
+                    try { bdgDoc = bdgProp.value; } catch (eBDoc) { bdgDoc = null; }
+                    var effBdgStr = toStandardDigits(badgeText);
+                    var effBdgSize = (frontSrc && typeof frontSrc.badgeFontSize === "number" && frontSrc.badgeFontSize > 0)
+                        ? frontSrc.badgeFontSize
+                        : ((frontSrc && typeof frontSrc.fontSize === "number" && frontSrc.fontSize > 0) ? frontSrc.fontSize : Math.max(9, Math.round(titleFontSize * 0.65)));
+                    var effBdgColor = (frontSrc && frontSrc.badgeColor)
+                        ? parseColor(frontSrc.badgeColor, [1.0, 1.0, 1.0])
+                        : ((frontSrc && frontSrc.color) ? parseColor(frontSrc.color, [1.0, 1.0, 1.0]) : [1.0, 1.0, 1.0]);
+
+                    if (bdgDoc) {
+                        try { bdgDoc.text = effBdgStr; } catch (eBT) {}
+                        try {
+                            if (typeof DigitSet !== "undefined" && DigitSet && DigitSet.ARABIC_DIGITS) {
+                                bdgDoc.digitSet = DigitSet.ARABIC_DIGITS;
+                            }
+                        } catch (eDS) {}
+                        try { bdgDoc.fontSize = effBdgSize; } catch (eBS) {}
+                        try { bdgDoc.fillColor = effBdgColor; } catch (eBC) {}
+                        try { bdgDoc.applyFill = true; } catch (eBAF) {}
+                        try { bdgDoc.applyStroke = false; } catch (eBAS) {}
+                        try { bdgDoc.justification = frontJustify; } catch (eBJ) {}
+                        try {
+                            bdgProp.setValue(bdgDoc);
+                        } catch (eSetBDoc) {
+                            try { bdgProp.setValue(effBdgStr); } catch (eSetBRaw) {}
+                        }
+                    } else {
+                        try { bdgProp.setValue(effBdgStr); } catch (eSetBRaw2) {}
+                    }
+                    bdgLayer.enabled = true;
+                } else if (bdgLayer) {
+                    bdgLayer.enabled = false;
                 }
 
                 // Front Title Layer
@@ -1829,143 +1935,125 @@ TR.API = {
                 var vertGap = (fBoxTitle.enabled || fBoxDesc.enabled) ? Math.max(14, globalBoxPaddingV + 8) : 6;
                 var hBoxGap = (fBoxTitle.enabled || fBoxDesc.enabled) ? Math.max(14, globalBoxPaddingV * 2 + 6) : 8;
 
-                // Anchoring & Positioning for Front Stream (Title & Desc)
+                // Anchoring & Positioning for Front Stream (Badge, Title, Desc)
+                var bdgH = 0;
+                var bdgRect = null;
+                if (hasBadge && bdgLayer) {
+                    bdgRect = bdgLayer.sourceRectAtTime(0, false);
+                    bdgH = bdgRect.height + 4;
+                }
+                var tH = 0;
+                var tRect = null;
+                if (hasTitle && tLayer) {
+                    tRect = tLayer.sourceRectAtTime(0, false);
+                    tH = tRect.height + hBoxGap;
+                }
+
                 if (orientation === "horizontal") {
                     if (effSide === "bottom") {
-                        // Front stream sits BELOW the timeline (Y > 0 at +topClear)
-                        if (hasTitle && hasDesc) {
-                            var tRect = tLayer.sourceRectAtTime(0, false);
+                        // Sits below timeline (Y > 0 at +topClear)
+                        var curY = +topClear;
+                        if (hasBadge && bdgLayer) {
+                            var bAp = [bdgRect.left + (bdgRect.width / 2), bdgRect.top, 0];
+                            bdgLayer.property("Anchor Point").setValue(bAp);
+                            try { bdgLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top, 0];'; } catch(e){}
+                            bdgLayer.property("Position").setValue([posAlong, curY, 0]);
+                            try { bdgLayer.property("Position").expression = ""; } catch(e){}
+                            curY += bdgH;
+                        }
+                        if (hasTitle && tLayer) {
                             var tAp = [tRect.left + (tRect.width / 2), tRect.top, 0];
                             tLayer.property("Anchor Point").setValue(tAp);
                             try { tLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top, 0];'; } catch(e){}
-                            tLayer.property("Position").setValue([posAlong, +topClear, 0]);
+                            tLayer.property("Position").setValue([posAlong, curY, 0]);
                             try { tLayer.property("Position").expression = ""; } catch(e){}
-
+                            curY += tH;
+                        }
+                        if (hasDesc && dLayer) {
                             var dRect = dLayer.sourceRectAtTime(0, false);
                             var dAp = [dRect.left + (dRect.width / 2), dRect.top, 0];
                             dLayer.property("Anchor Point").setValue(dAp);
                             try { dLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top, 0];'; } catch(e){}
-                            dLayer.property("Position").setValue([posAlong, +topClear + tRect.height + hBoxGap, 0]);
-                            try {
-                                dLayer.property("Position").expression = 
-                                    'var t = null; try { t = thisComp.layer("MS_Node_' + (i + 1) + '_Title") || thisComp.layer("TR_Node_' + (i + 1) + '_Title"); } catch(e){};' +
-                                    'var tH = (t && t.enabled) ? (t.sourceRectAtTime(time, false).height + ' + hBoxGap + ') : 0;' +
-                                    '[' + posAlong + ', +' + topClear + ' + tH, 0];';
-                            } catch(e){}
-                        } else if (hasTitle) {
-                            var tRect = tLayer.sourceRectAtTime(0, false);
-                            var tAp = [tRect.left + (tRect.width / 2), tRect.top, 0];
-                            tLayer.property("Anchor Point").setValue(tAp);
-                            try { tLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top, 0];'; } catch(e){}
-                            tLayer.property("Position").setValue([posAlong, +topClear, 0]);
-                            try { tLayer.property("Position").expression = ""; } catch(e){}
-                        } else if (hasDesc) {
-                            var dRect = dLayer.sourceRectAtTime(0, false);
-                            var dAp = [dRect.left + (dRect.width / 2), dRect.top, 0];
-                            dLayer.property("Anchor Point").setValue(dAp);
-                            try { dLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top, 0];'; } catch(e){}
-                            dLayer.property("Position").setValue([posAlong, +topClear, 0]);
+                            dLayer.property("Position").setValue([posAlong, curY, 0]);
                             try { dLayer.property("Position").expression = ""; } catch(e){}
                         }
                     } else {
-                        // Default: effSide === "top", Front stream sits ABOVE the timeline (Y < 0 at -topClear)
-                        if (hasTitle && hasDesc) {
+                        // Default: effSide === "top", Front sits above timeline (Y < 0 at -topClear)
+                        var curYTop = -topClear;
+                        if (hasDesc && dLayer) {
                             var dRect = dLayer.sourceRectAtTime(0, false);
                             var dAp = [dRect.left + (dRect.width / 2), dRect.top + dRect.height, 0];
                             dLayer.property("Anchor Point").setValue(dAp);
-                            try { dLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top + r.height, 0];'; } catch(e){}
-                            dLayer.property("Position").setValue([posAlong, -topClear, 0]);
+                            try { dLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top, 0];'; } catch(e){}
+                            dLayer.property("Position").setValue([posAlong, curYTop, 0]);
                             try { dLayer.property("Position").expression = ""; } catch(e){}
-
-                            var tRect = tLayer.sourceRectAtTime(0, false);
+                            curYTop -= (dRect.height + hBoxGap);
+                        }
+                        if (hasTitle && tLayer) {
                             var tAp = [tRect.left + (tRect.width / 2), tRect.top + tRect.height, 0];
                             tLayer.property("Anchor Point").setValue(tAp);
                             try { tLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top + r.height, 0];'; } catch(e){}
-                            tLayer.property("Position").setValue([posAlong, -topClear - dRect.height - hBoxGap, 0]);
-                            try {
-                                tLayer.property("Position").expression = 
-                                    'var d = null; try { d = thisComp.layer("MS_Node_' + (i + 1) + '_Desc") || thisComp.layer("TR_Node_' + (i + 1) + '_Desc"); } catch(e){};' +
-                                    'var dH = (d && d.enabled) ? (d.sourceRectAtTime(time, false).height + ' + hBoxGap + ') : 0;' +
-                                    '[' + posAlong + ', -' + topClear + ' - dH, 0];';
-                            } catch(e){}
-                        } else if (hasTitle) {
-                            var tRect = tLayer.sourceRectAtTime(0, false);
-                            var tAp = [tRect.left + (tRect.width / 2), tRect.top + tRect.height, 0];
-                            tLayer.property("Anchor Point").setValue(tAp);
-                            try { tLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top + r.height, 0];'; } catch(e){}
-                            tLayer.property("Position").setValue([posAlong, -topClear, 0]);
+                            tLayer.property("Position").setValue([posAlong, curYTop, 0]);
                             try { tLayer.property("Position").expression = ""; } catch(e){}
-                        } else if (hasDesc) {
-                            var dRect = dLayer.sourceRectAtTime(0, false);
-                            var dAp = [dRect.left + (dRect.width / 2), dRect.top + dRect.height, 0];
-                            dLayer.property("Anchor Point").setValue(dAp);
-                            try { dLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top + r.height, 0];'; } catch(e){}
-                            dLayer.property("Position").setValue([posAlong, -topClear, 0]);
-                            try { dLayer.property("Position").expression = ""; } catch(e){}
+                            curYTop -= (tRect.height + 4);
+                        }
+                        if (hasBadge && bdgLayer) {
+                            var bAp = [bdgRect.left + (bdgRect.width / 2), bdgRect.top + bdgRect.height, 0];
+                            bdgLayer.property("Anchor Point").setValue(bAp);
+                            try { bdgLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width / 2, r.top + r.height, 0];'; } catch(e){}
+                            bdgLayer.property("Position").setValue([posAlong, curYTop, 0]);
+                            try { bdgLayer.property("Position").expression = ""; } catch(e){}
                         }
                     }
                 } else {
                     // Vertical mode
                     if (effSide === "right") {
-                        // Front stream sits strictly to the RIGHT of the timeline (X > 0 at +topClear)
-                        if (hasTitle && hasDesc) {
-                            var tRect = tLayer.sourceRectAtTime(0, false);
+                        if (hasTitle && tLayer) {
                             var tAp = [tRect.left, tRect.top + tRect.height, 0];
                             tLayer.property("Anchor Point").setValue(tAp);
                             try { tLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left, r.top + r.height, 0];'; } catch(e){}
                             tLayer.property("Position").setValue([+topClear, posAlong - vertGap, 0]);
                             try { tLayer.property("Position").expression = ""; } catch(e){}
-
+                        }
+                        if (hasBadge && bdgLayer) {
+                            var bAp = [bdgRect.left, bdgRect.top + bdgRect.height, 0];
+                            bdgLayer.property("Anchor Point").setValue(bAp);
+                            try { bdgLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left, r.top + r.height, 0];'; } catch(e){}
+                            var bPosY = (hasTitle && tRect) ? (posAlong - vertGap - tRect.height - 4) : (posAlong - vertGap);
+                            bdgLayer.property("Position").setValue([+topClear, bPosY, 0]);
+                            try { bdgLayer.property("Position").expression = ""; } catch(e){}
+                        }
+                        if (hasDesc && dLayer) {
                             var dRect = dLayer.sourceRectAtTime(0, false);
                             var dAp = [dRect.left, dRect.top, 0];
                             dLayer.property("Anchor Point").setValue(dAp);
                             try { dLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left, r.top, 0];'; } catch(e){}
                             dLayer.property("Position").setValue([+topClear, posAlong + vertGap, 0]);
                             try { dLayer.property("Position").expression = ""; } catch(e){}
-                        } else if (hasTitle) {
-                            var tRect = tLayer.sourceRectAtTime(0, false);
-                            var tAp = [tRect.left, tRect.top + (tRect.height / 2), 0];
-                            tLayer.property("Anchor Point").setValue(tAp);
-                            try { tLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left, r.top + r.height / 2, 0];'; } catch(e){}
-                            tLayer.property("Position").setValue([+topClear, posAlong, 0]);
-                            try { tLayer.property("Position").expression = ""; } catch(e){}
-                        } else if (hasDesc) {
-                            var dRect = dLayer.sourceRectAtTime(0, false);
-                            var dAp = [dRect.left, dRect.top + (dRect.height / 2), 0];
-                            dLayer.property("Anchor Point").setValue(dAp);
-                            try { dLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left, r.top + r.height / 2, 0];'; } catch(e){}
-                            dLayer.property("Position").setValue([+topClear, posAlong, 0]);
-                            try { dLayer.property("Position").expression = ""; } catch(e){}
                         }
                     } else {
-                        // Default: effSide === "left", Front stream sits strictly to the LEFT of the timeline (X < 0 at -topClear)
-                        if (hasTitle && hasDesc) {
-                            var tRect = tLayer.sourceRectAtTime(0, false);
+                        // effSide === "left"
+                        if (hasTitle && tLayer) {
                             var tAp = [tRect.left + tRect.width, tRect.top + tRect.height, 0];
                             tLayer.property("Anchor Point").setValue(tAp);
                             try { tLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width, r.top + r.height, 0];'; } catch(e){}
                             tLayer.property("Position").setValue([-topClear, posAlong - vertGap, 0]);
                             try { tLayer.property("Position").expression = ""; } catch(e){}
-
+                        }
+                        if (hasBadge && bdgLayer) {
+                            var bAp = [bdgRect.left + bdgRect.width, bdgRect.top + bdgRect.height, 0];
+                            bdgLayer.property("Anchor Point").setValue(bAp);
+                            try { bdgLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width, r.top + r.height, 0];'; } catch(e){}
+                            var bPosY = (hasTitle && tRect) ? (posAlong - vertGap - tRect.height - 4) : (posAlong - vertGap);
+                            bdgLayer.property("Position").setValue([-topClear, bPosY, 0]);
+                            try { bdgLayer.property("Position").expression = ""; } catch(e){}
+                        }
+                        if (hasDesc && dLayer) {
                             var dRect = dLayer.sourceRectAtTime(0, false);
                             var dAp = [dRect.left + dRect.width, dRect.top, 0];
                             dLayer.property("Anchor Point").setValue(dAp);
                             try { dLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width, r.top, 0];'; } catch(e){}
                             dLayer.property("Position").setValue([-topClear, posAlong + vertGap, 0]);
-                            try { dLayer.property("Position").expression = ""; } catch(e){}
-                        } else if (hasTitle) {
-                            var tRect = tLayer.sourceRectAtTime(0, false);
-                            var tAp = [tRect.left + tRect.width, tRect.top + (tRect.height / 2), 0];
-                            tLayer.property("Anchor Point").setValue(tAp);
-                            try { tLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width, r.top + r.height / 2, 0];'; } catch(e){}
-                            tLayer.property("Position").setValue([-topClear, posAlong, 0]);
-                            try { tLayer.property("Position").expression = ""; } catch(e){}
-                        } else if (hasDesc) {
-                            var dRect = dLayer.sourceRectAtTime(0, false);
-                            var dAp = [dRect.left + dRect.width, dRect.top + (dRect.height / 2), 0];
-                            dLayer.property("Anchor Point").setValue(dAp);
-                            try { dLayer.property("Anchor Point").expression = 'var r = sourceRectAtTime(time, false); [r.left + r.width, r.top + r.height / 2, 0];'; } catch(e){}
-                            dLayer.property("Position").setValue([-topClear, posAlong, 0]);
                             try { dLayer.property("Position").expression = ""; } catch(e){}
                         }
                     }

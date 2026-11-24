@@ -11,9 +11,9 @@
     var state = null;
     var pollTimer = null;
 
-    function saveState() {
+    function saveState(immediate) {
         if (typeof TIME_RULER_STATE_STORE !== 'undefined') {
-            TIME_RULER_STATE_STORE.saveState(state);
+            TIME_RULER_STATE_STORE.saveState(state, immediate);
         }
     }
 
@@ -116,10 +116,10 @@
             spinWrap.className = 'prop-spin-btns';
             spinWrap.innerHTML =
                 '<button type="button" class="prop-spin-btn prop-spin-up" tabindex="-1" title="زيادة">' +
-                '<svg width="7" height="4" viewBox="0 0 8 5" fill="currentColor"><path d="M4 0L8 5H0L4 0Z"/></svg>' +
+                '<svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4L4 1L7 4"/></svg>' +
                 '</button>' +
                 '<button type="button" class="prop-spin-btn prop-spin-down" tabindex="-1" title="إنقاص">' +
-                '<svg width="7" height="4" viewBox="0 0 8 5" fill="currentColor"><path d="M4 5L0 0H8L4 5Z"/></svg>' +
+                '<svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1L4 4L7 1"/></svg>' +
                 '</button>';
             box.appendChild(spinWrap);
 
@@ -681,6 +681,12 @@
         TIME_RULER_HOST_BRIDGE.safeUpdateCompStatus(true);
         window.addEventListener('resize', function () {
             TIME_RULER_TIMELINE_HUD.renderTimelineHUD(state);
+        });
+        window.addEventListener('beforeunload', function () {
+            saveState(true);
+        });
+        window.addEventListener('blur', function () {
+            saveState(true);
         });
 
         initKeyInterests();

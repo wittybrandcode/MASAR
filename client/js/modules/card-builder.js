@@ -1906,73 +1906,57 @@ var TIME_RULER_CARD_BUILDER = (function () {
                 }
             } else if (activeTab === 'front' && node.sources && node.sources.front) {
                 var fInps = pod.querySelectorAll('input.node-input-title');
-                var fDescInp = pod.querySelector('input.node-input-desc') || pod.querySelector('textarea.node-input-desc') || pod.querySelector('textarea');
+                var fDescInp = pod.querySelector('input.node-input-desc') || pod.querySelector('textarea.node-input-desc') || pod.querySelector('textarea.smart-list-textarea') || pod.querySelector('textarea');
                 var fNumInp = pod.querySelector('input.node-input-num') || pod.querySelector('input.node-input-badge');
-                var fType = node.sources.front.type || 'title_text';
+                var fIconInp = pod.querySelector('input[title*="رمز"]');
 
-                if (fType === 'title_text') {
-                    if (fInps.length > 0) node.sources.front.title = toStandardDigits(fInps[0].value);
-                    if (fDescInp) node.sources.front.text = toStandardDigits(fDescInp.value);
-                } else if (fType === 'title_list') {
-                    if (fInps.length > 0) node.sources.front.title = toStandardDigits(fInps[0].value);
-                    if (fDescInp) {
-                        var listVal = toStandardDigits(fDescInp.value);
-                        node.sources.front.text = listVal;
-                        node.sources.front.items = listVal.split('\n').map(function (s) { return s.replace(/^•\s*/, '').trim(); }).filter(Boolean);
+                if (fInps.length > 0) {
+                    node.sources.front.title = toStandardDigits(fInps[0].value);
+                }
+                if (fDescInp) {
+                    var rawDesc = toStandardDigits(fDescInp.value);
+                    node.sources.front.text = rawDesc;
+                    if (node.sources.front.showList || node.sources.front.type === 'list' || node.sources.front.type === 'title_list') {
+                        node.sources.front.items = rawDesc.split('\n').map(function (s) { return s.replace(/^•\s*/, '').trim(); }).filter(Boolean);
                     }
-                } else if (fType === 'title') {
-                    if (fInps.length > 0) node.sources.front.title = toStandardDigits(fInps[0].value);
-                } else if (fType === 'text') {
-                    if (fDescInp) node.sources.front.text = toStandardDigits(fDescInp.value);
-                } else if (fType === 'list') {
-                    if (fDescInp) {
-                        var listVal2 = toStandardDigits(fDescInp.value);
-                        node.sources.front.text = listVal2;
-                        node.sources.front.items = listVal2.split('\n').map(function (s) { return s.replace(/^•\s*/, '').trim(); }).filter(Boolean);
-                    }
-                } else if (fType === 'number_title') {
-                    if (fNumInp) node.sources.front.number = toStandardDigits(fNumInp.value);
-                    if (fInps.length > 0) node.sources.front.title = toStandardDigits(fInps[0].value);
-                } else if (fType === 'number_text') {
-                    if (fNumInp) node.sources.front.number = toStandardDigits(fNumInp.value);
-                    if (fDescInp) node.sources.front.text = toStandardDigits(fDescInp.value);
-                } else if (fType === 'icon_title') {
-                    var inps = pod.querySelectorAll('input');
-                    if (inps.length >= 2) {
-                        node.sources.front.icon = inps[0].value;
-                        node.sources.front.title = toStandardDigits(inps[1].value);
-                    }
-                } else if (fType === 'badge') {
-                    var badgeVal = toStandardDigits(fNumInp ? fNumInp.value : (fInps.length > 0 ? fInps[0].value : ''));
-                    node.sources.front.number = badgeVal;
-                    node.sources.front.badge = badgeVal;
-                    node.sources.front.text = badgeVal;
+                }
+                if (fNumInp) {
+                    var rawNum = toStandardDigits(fNumInp.value);
+                    node.sources.front.number = rawNum;
+                    node.sources.front.badge = rawNum;
+                    if (node.sources.front.type === 'badge') node.sources.front.text = rawNum;
+                }
+                if (fIconInp) {
+                    node.sources.front.icon = fIconInp.value;
                 }
             } else if (activeTab === 'behind' && node.sources && node.sources.behind) {
                 var bInps = pod.querySelectorAll('input.node-input-title');
-                var bDescInp = pod.querySelector('input.node-input-desc') || pod.querySelector('textarea.node-input-desc') || pod.querySelector('textarea');
+                var bDescInp = pod.querySelector('input.node-input-desc') || pod.querySelector('textarea.node-input-desc') || pod.querySelector('textarea.smart-list-textarea') || pod.querySelector('textarea');
                 var bNumInp = pod.querySelector('input.node-input-num') || pod.querySelector('input.node-input-badge');
-                var bType = node.sources.behind.type || 'number_text';
+                var bIconInp = pod.querySelector('input[title*="رمز"]');
 
-                if (bType === 'number_text') {
-                    if (bNumInp) node.sources.behind.number = toStandardDigits(bNumInp.value);
-                    if (bDescInp) node.sources.behind.text = toStandardDigits(bDescInp.value);
-                } else if (bType === 'text') {
-                    if (bDescInp) node.sources.behind.text = toStandardDigits(bDescInp.value);
-                } else if (bType === 'number') {
-                    if (bNumInp) node.sources.behind.number = toStandardDigits(bNumInp.value);
-                } else if (bType === 'title_text') {
-                    if (bInps.length > 0) node.sources.behind.title = toStandardDigits(bInps[0].value);
-                    if (bDescInp) node.sources.behind.text = toStandardDigits(bDescInp.value);
-                } else if (bType === 'title') {
-                    if (bInps.length > 0) node.sources.behind.title = toStandardDigits(bInps[0].value);
-                } else if (bType === 'badge') {
-                    var bBadgeVal = toStandardDigits(bNumInp ? bNumInp.value : (bInps.length > 0 ? bInps[0].value : ''));
-                    node.sources.behind.number = bBadgeVal;
-                    node.sources.behind.badge = bBadgeVal;
-                    node.sources.behind.text = bBadgeVal;
+                if (bInps.length > 0) {
+                    node.sources.behind.title = toStandardDigits(bInps[0].value);
+                }
+                if (bDescInp) {
+                    var rawBDesc = toStandardDigits(bDescInp.value);
+                    node.sources.behind.text = rawBDesc;
+                    if (node.sources.behind.showList || node.sources.behind.type === 'list') {
+                        node.sources.behind.items = rawBDesc.split('\n').map(function (s) { return s.replace(/^•\s*/, '').trim(); }).filter(Boolean);
+                    }
+                }
+                if (bNumInp) {
+                    var rawBNum = toStandardDigits(bNumInp.value);
+                    node.sources.behind.number = rawBNum;
+                    node.sources.behind.badge = rawBNum;
+                    if (node.sources.behind.type === 'badge') node.sources.behind.text = rawBNum;
+                }
+                if (bIconInp) {
+                    node.sources.behind.icon = bIconInp.value;
                 }
             }
+
+            syncLegacyNodeFields(node, idx);
 
             syncLegacyNodeFields(node, idx);
         }

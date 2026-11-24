@@ -157,9 +157,11 @@ var TIME_RULER_BRIDGE = (function () {
         var script =
             '(function() {\n' +
             '    try {\n' +
-            '        var bFile = new File(' + hostDirArg + ' + "/bootstrap.jsx");\n' +
-            '        if (bFile.exists) {\n' +
-            '            $.evalFile(bFile);\n' +
+            '        if ((typeof MASAR === "undefined" || typeof MASAR.dispatch !== "function") && (typeof TIME_RULER === "undefined" || typeof TIME_RULER.dispatch !== "function")) {\n' +
+            '            var bFile = new File(' + hostDirArg + ' + "/bootstrap.jsx");\n' +
+            '            if (bFile.exists) {\n' +
+            '                $.evalFile(bFile);\n' +
+            '            }\n' +
             '        }\n' +
             '        if (typeof MASAR !== "undefined" && typeof MASAR.dispatch === "function") {\n' +
             '            return MASAR.dispatch(' + JSON.stringify(job.fnName) + ', ' + quoteForEvalScript(job.json) + ');\n' +

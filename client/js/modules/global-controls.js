@@ -226,6 +226,9 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
         }
 
         updateConditionalVisibility(state);
+        if (typeof window.initPropValSpinners === 'function') {
+            window.initPropValSpinners();
+        }
     }
 
     function bindAllGlobalControls(state, callbacks) {
@@ -306,6 +309,9 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
                 state.spacingMode = btn.dataset.spacing;
                 setSegmentActive('seg-spacing', 'data-spacing', state.spacingMode);
                 updateConditionalVisibility(state);
+        if (typeof window.initPropValSpinners === 'function') {
+            window.initPropValSpinners();
+        }
                 onLive(0, true);
             });
         }
@@ -318,6 +324,9 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
                 state.lineStyle = btn.dataset.style;
                 setSegmentActive('seg-line-style', 'data-style', state.lineStyle);
                 updateConditionalVisibility(state);
+        if (typeof window.initPropValSpinners === 'function') {
+            window.initPropValSpinners();
+        }
                 onLive(0, false);
             });
         }
@@ -392,6 +401,9 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
                 setSegmentActive('seg-start-terminal', 'data-term', state.startTerminal);
                 var sel = $('sel-start-terminal'); if (sel) sel.value = state.startTerminal;
                 updateConditionalVisibility(state);
+        if (typeof window.initPropValSpinners === 'function') {
+            window.initPropValSpinners();
+        }
                 onLive(0, false);
             });
         }
@@ -405,6 +417,9 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
                 setSegmentActive('seg-end-terminal', 'data-term', state.endTerminal);
                 var sel = $('sel-end-terminal'); if (sel) sel.value = state.endTerminal;
                 updateConditionalVisibility(state);
+        if (typeof window.initPropValSpinners === 'function') {
+            window.initPropValSpinners();
+        }
                 onLive(0, false);
             });
         }

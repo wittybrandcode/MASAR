@@ -588,9 +588,11 @@ var TIME_RULER_STATE_STORE = (function () {
             } else if (f.type === 'icon_title') {
                 node.title = (f.icon ? (f.icon + ' ') : '') + (f.title || '');
             } else if (f.type === 'badge') {
-                node.title = f.badge || f.number || f.text || '';
+                if (!node.title) {
+                    node.title = f.badge || f.number || f.text || '';
+                }
             } else if (f.type === 'text') {
-                node.title = '';
+                // Keep existing node.title intact; never wipe it out on preset switch
             }
 
             if (f.type === 'title_list' || f.type === 'list') {
@@ -614,10 +616,23 @@ var TIME_RULER_STATE_STORE = (function () {
         }
     }
 
-    function saveState(stateObj) {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateObj));
-        } catch (e) {}
+    var _saveTimer = null;
+    function saveState(stateObj, immediate) {
+        if (!stateObj) stateObj = activeState;
+        if (immediate === true) {
+            if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(stateObj));
+            } catch (e) {}
+            return;
+        }
+        if (_saveTimer) clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(function () {
+            _saveTimer = null;
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(stateObj));
+            } catch (e) {}
+        }, 250);
     }
 
     function loadSavedState(stateObj) {
