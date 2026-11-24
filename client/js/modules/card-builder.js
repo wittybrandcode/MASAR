@@ -337,8 +337,8 @@ var TIME_RULER_CARD_BUILDER = (function () {
                 ? 'جهة التموضع: يتبع العام (انقر للتبديل)'
                 : ('جهة التموضع: ' + (curNodeSide === 'left' ? 'يسار المسار' : (curNodeSide === 'right' ? 'يمين المسار' : (curNodeSide === 'top' ? 'أعلى المسار' : 'أسفل المسار'))));
             btnFlip.title = sideTitle;
-            var sideIcon = (curNodeSide === 'right') ? 'fa-arrow-right' : ((curNodeSide === 'left') ? 'fa-arrow-left' : 'fa-arrows-left-right');
-            btnFlip.innerHTML = '<i class="fa-solid ' + sideIcon + '"></i>';
+            var sideIcon = (curNodeSide === 'right') ? 'ph-bold ph-arrow-right' : ((curNodeSide === 'left') ? 'ph-bold ph-arrow-left' : 'ph-bold ph-arrows-left-right');
+            btnFlip.innerHTML = '<i class="' + sideIcon + '"></i>';
             if (curNodeSide !== 'inherit') btnFlip.classList.add('active');
             btnFlip.addEventListener('click', function (e) {
                 e.stopPropagation();
@@ -2037,8 +2037,8 @@ var TIME_RULER_CARD_BUILDER = (function () {
 
         if (icon) {
             icon.className = isDesc 
-                ? 'fa-solid fa-arrow-down-wide-short' 
-                : 'fa-solid fa-arrow-down-up-across-line';
+                ? 'ph-bold ph-sort-descending' 
+                : 'ph-bold ph-sort-ascending';
         }
         if (txt) {
             txt.textContent = isDesc ? 'تنازلي' : 'قلب الترتيب';

@@ -184,7 +184,13 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
                 hintBoxMode.innerHTML = '<i class="fa-solid fa-circle-info"></i> <span>النمط العام: «بدون صناديق». تخصيص الخصائص أدناه يسري تلقائياً عند تفعيل الصناديق هنا أو بشكل فردي لكل محطة في تبويب «صناديق المنابع».</span>';
             }
         }
-        var rowBoxStyling = $('row-box-styling'); if (rowBoxStyling) rowBoxStyling.style.display = 'flex';
+        var rowBoxStyling = $('row-box-styling');
+        if (rowBoxStyling) {
+            rowBoxStyling.style.display = 'flex';
+            rowBoxStyling.style.flexDirection = 'column';
+            rowBoxStyling.style.gap = '8px';
+            rowBoxStyling.style.width = '100%';
+        }
 
         var lblSide1 = $('lbl-side-1');
         var lblSide2 = $('lbl-side-2');

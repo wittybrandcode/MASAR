@@ -994,6 +994,23 @@ div i.fa-regular {
     box-shadow: 0 0 6px var(--accent-glow);
 }
 
+.icon-seg-btn i {
+    font-size: 12px;
+}
+
+.icon-seg-btn svg {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Box Styling Container: Stacked Vertically as Clean Independent Property Rows */
+#row-box-styling {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+}
+
 /* Palette Swatches (Icons/Dots Only) */
 .palette-swatches-strip {
     display: flex;

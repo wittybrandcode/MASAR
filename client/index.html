@@ -99,11 +99,11 @@
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                     </button>
                     <button type="button" class="btn-tool btn-subbar" id="btn-reverse-nodes" title="قلب ترتيب المحطات (تصاعدي ↔ تنازلي)">
-                        <i class="fa-solid fa-arrows-up-down" id="icon-reverse-nodes"></i>
+                        <i class="ph-bold ph-arrows-down-up" id="icon-reverse-nodes"></i>
                         <span id="txt-reverse-nodes" style="display: none;"></span>
                     </button>
                     <button type="button" class="btn-tool btn-subbar" id="btn-toggle-all" title="طي / توسيع جميع البطاقات">
-                        <i class="fa-solid fa-up-down-left-right"></i>
+                        <i class="ph-bold ph-caret-up-down"></i>
                     </button>
                 </div>
 
@@ -150,13 +150,13 @@
                             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                                 <!-- Orientation -->
                                 <div class="icon-seg-group" id="seg-orientation">
-                                    <button type="button" class="icon-seg-btn tb active" data-orientation="vertical" title="مسار عمودي ↕"><i class="fa-solid fa-arrows-up-down"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-orientation="horizontal" title="مسار أفقي ↔"><i class="fa-solid fa-arrows-left-right"></i></button>
+                                    <button type="button" class="icon-seg-btn tb active" data-orientation="vertical" title="مسار عمودي ↕"><i class="ph-bold ph-arrows-vertical"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-orientation="horizontal" title="مسار أفقي ↔"><i class="ph-bold ph-arrows-left-right"></i></button>
                                 </div>
                                 <!-- Spacing -->
                                 <div class="icon-seg-group" id="seg-spacing">
-                                    <button type="button" class="icon-seg-btn tb active" data-spacing="auto" title="توزيع تلقائي متساوٍ"><i class="fa-solid fa-expand"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-spacing="fixed" title="تباعد مسافي ثابت"><i class="fa-solid fa-ruler"></i></button>
+                                    <button type="button" class="icon-seg-btn tb active" data-spacing="auto" title="توزيع تلقائي متساوٍ"><i class="ph-bold ph-arrows-out-line-horizontal"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-spacing="fixed" title="تباعد مسافي ثابت"><i class="ph-bold ph-ruler"></i></button>
                                 </div>
                                 <!-- Style -->
                                 <div class="icon-seg-group" id="seg-line-style">
@@ -166,9 +166,9 @@
                                 </div>
                                 <!-- Cap -->
                                 <div class="icon-seg-group" id="seg-line-cap">
-                                    <button type="button" class="icon-seg-btn tb" data-cap="butt" title="حافة حادة"><i class="fa-solid fa-square-full" style="font-size: 8px;"></i></button>
-                                    <button type="button" class="icon-seg-btn tb active" data-cap="round" title="حافة دائرية"><i class="fa-solid fa-circle" style="font-size: 8px;"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-cap="projecting" title="حافة مربعة"><i class="fa-solid fa-square" style="font-size: 8px;"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-cap="butt" title="حافة حادة"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect width="10" height="10"/></svg></button>
+                                    <button type="button" class="icon-seg-btn tb active" data-cap="round" title="حافة دائرية"><i class="ph-bold ph-circle" style="font-size: 8px;"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-cap="projecting" title="حافة مربعة"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="8" height="8" rx="1"/></svg></button>
                                 </div>
                             </div>
                         </div>
@@ -256,23 +256,23 @@
                                     <option value="bar">bar</option>
                                 </select>
                                 <div class="icon-seg-group" id="seg-start-terminal" title="طرف البداية">
-                                    <button type="button" class="icon-seg-btn tb active" data-term="none" title="بدون"><i class="fa-solid fa-ban"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-term="arrow" title="سهم"><i class="fa-solid fa-caret-left"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-term="dot" title="نقطة"><i class="fa-solid fa-circle" style="font-size: 8px;"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-term="bar" title="سن"><i class="fa-solid fa-grip-lines-vertical"></i></button>
+                                    <button type="button" class="icon-seg-btn tb active" data-term="none" title="بدون"><i class="ph-bold ph-prohibit"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-term="arrow" title="سهم"><i class="ph-bold ph-caret-left"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-term="dot" title="نقطة"><i class="ph-bold ph-circle" style="font-size: 8px;"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-term="bar" title="سن"><svg width="10" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
                                 </div>
                                 <div class="icon-seg-group" id="seg-end-terminal" title="طرف النهاية">
-                                    <button type="button" class="icon-seg-btn tb active" data-term="none" title="بدون"><i class="fa-solid fa-ban"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-term="arrow" title="سهم"><i class="fa-solid fa-caret-right"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-term="dot" title="نقطة"><i class="fa-solid fa-circle" style="font-size: 8px;"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-term="bar" title="سن"><i class="fa-solid fa-grip-lines-vertical"></i></button>
+                                    <button type="button" class="icon-seg-btn tb active" data-term="none" title="بدون"><i class="ph-bold ph-prohibit"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-term="arrow" title="سهم"><i class="ph-bold ph-caret-right"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-term="dot" title="نقطة"><i class="ph-bold ph-circle" style="font-size: 8px;"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-term="bar" title="سن"><svg width="10" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Row 4b: Terminal Size & Independent Color -->
                         <div class="prop-row" id="row-terminal-custom" style="display: none;">
-                            <span class="prop-lbl"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> حجم ولون الأطراف:</span>
+                            <span class="prop-lbl"><i class="ph-bold ph-arrows-out"></i> حجم الأطراف:</span>
                             <div class="prop-slider-unit">
                                 <input type="range" class="prop-slider sl" id="rng-terminal-size" min="6" max="50" step="1" value="14">
                                 <div class="prop-val-box"><input type="number" id="inp-terminal-size" class="ni" value="14" min="4" max="80"><span class="unit">px</span></div>
@@ -312,7 +312,7 @@
                                 <span id="txt-global-shape-name" style="font-weight: 700; color: #ffffff;">دبوس موقع</span>
                             </div>
                             <button type="button" class="btn-tool" title="استعراض الأشكال">
-                                <i class="fa-solid fa-shapes"></i>
+                                <i class="ph-bold ph-squares-four"></i>
                             </button>
                         </div>
 
@@ -424,16 +424,16 @@
                             <div style="display: flex; gap: 8px;">
                                 <!-- Side -->
                                 <div class="icon-seg-group" id="seg-content-side">
-                                    <button type="button" class="icon-seg-btn tb active" data-side="left" title="المحتوى يسار المسار"><i class="fa-solid fa-arrow-left"></i><span id="lbl-side-1" style="display:none;"></span></button>
-                                    <button type="button" class="icon-seg-btn tb" data-side="alternate" title="محتوى متناوب متعرج"><i class="fa-solid fa-shuffle"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-side="right" title="المحتوى يمين المسار"><i class="fa-solid fa-arrow-right"></i><span id="lbl-side-2" style="display:none;"></span></button>
+                                    <button type="button" class="icon-seg-btn tb active" data-side="left" title="المحتوى يسار المسار"><i class="ph-bold ph-arrow-left"></i><span id="lbl-side-1" style="display:none;"></span></button>
+                                    <button type="button" class="icon-seg-btn tb" data-side="alternate" title="محتوى متناوب متعرج"><i class="ph-bold ph-shuffle"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-side="right" title="المحتوى يمين المسار"><i class="ph-bold ph-arrow-right"></i><span id="lbl-side-2" style="display:none;"></span></button>
                                 </div>
                                 <!-- Align -->
                                 <div class="icon-seg-group" id="seg-text-align">
-                                    <button type="button" class="icon-seg-btn tb active" data-align="auto" title="محاذاة ذكية تلقائية"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-align="right" title="محاذاة لليمين"><i class="fa-solid fa-align-right"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-align="center" title="محاذاة للوسط"><i class="fa-solid fa-align-center"></i></button>
-                                    <button type="button" class="icon-seg-btn tb" data-align="left" title="محاذاة لليسار"><i class="fa-solid fa-align-left"></i></button>
+                                    <button type="button" class="icon-seg-btn tb active" data-align="auto" title="محاذاة ذكية تلقائية"><i class="ph-bold ph-magic-wand"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-align="right" title="محاذاة لليمين"><i class="ph-bold ph-align-right"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-align="center" title="محاذاة للوسط"><i class="ph-bold ph-align-center-horizontal"></i></button>
+                                    <button type="button" class="icon-seg-btn tb" data-align="left" title="محاذاة لليسار"><i class="ph-bold ph-align-left"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -473,17 +473,17 @@
                 <!-- SECTION 4: صناديق وبطاقات النصوص -->
                 <div class="flat-section" id="sec-boxes">
                     <div class="flat-section-header">
-                        <span><i class="fa-solid fa-square sec-icon"></i> صناديق وبطاقات النصوص (Text Boxes)</span>
+                        <span><i class="ph-bold ph-square sec-icon"></i> صناديق وبطاقات النصوص (Text Boxes)</span>
                         <i class="fa-solid fa-chevron-up"></i>
                     </div>
                     <div class="flat-section-body">
                         <!-- Row 1: Master Mode (Icons ONLY) -->
                         <div class="prop-row">
-                            <span class="prop-lbl"><i class="fa-regular fa-square"></i> النمط العام:</span>
+                            <span class="prop-lbl"><i class="ph-bold ph-square"></i> النمط العام:</span>
                             <div class="icon-seg-group" id="seg-box-mode" style="width: auto;">
-                                <button type="button" class="icon-seg-btn tb active" data-box-mode="off" title="بدون صناديق (نصوص حرة بدون خلفية)"><i class="fa-solid fa-ban"></i></button>
-                                <button type="button" class="icon-seg-btn tb" data-box-mode="glass" title="صناديق زجاجية شفافة (Glass Cards)"><i class="fa-regular fa-clone"></i></button>
-                                <button type="button" class="icon-seg-btn tb" data-box-mode="solid" title="صناديق صلبة واضحة (Solid Cards)"><i class="fa-solid fa-square"></i></button>
+                                <button type="button" class="icon-seg-btn tb active" data-box-mode="off" title="بدون صناديق (نصوص حرة بدون خلفية)"><i class="ph-bold ph-prohibit"></i></button>
+                                <button type="button" class="icon-seg-btn tb" data-box-mode="glass" title="صناديق زجاجية شفافة (Glass Cards)"><i class="ph-bold ph-browsers"></i></button>
+                                <button type="button" class="icon-seg-btn tb" data-box-mode="solid" title="صناديق صلبة واضحة (Solid Cards)"><i class="ph-bold ph-square"></i></button>
                             </div>
                             <span id="hint-box-mode" style="display:none;"></span>
                         </div>
@@ -523,9 +523,9 @@
                                 </div>
                             </div>
 
-                            <!-- Row 4: Global Box Padding & Stroke Width -->
+                            <!-- Row 4: Global Box Padding -->
                             <div class="prop-row">
-                                <span class="prop-lbl"><i class="fa-solid fa-border-all"></i> الحواشي والإطار:</span>
+                                <span class="prop-lbl"><i class="ph-bold ph-bounding-box"></i> حواشي الصندوق:</span>
                                 <div style="display: flex; gap: 6px; flex: 1; align-items: center;">
                                     <div class="prop-slider-unit" title="الحاشية الأفقية Padding H">
                                         <input type="range" class="prop-slider sl" id="rng-box-pad-h" min="4" max="40" step="1" value="14">
@@ -535,6 +535,13 @@
                                         <input type="range" class="prop-slider sl" id="rng-box-pad-v" min="2" max="30" step="1" value="6">
                                         <div class="prop-val-box"><input type="number" id="inp-box-pad-v" class="ni" value="6" min="0" max="50"><span class="unit">V</span></div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Row 5: Global Box Stroke Width -->
+                            <div class="prop-row">
+                                <span class="prop-lbl"><i class="ph-bold ph-frame-corners"></i> إطار الصندوق:</span>
+                                <div style="display: flex; gap: 6px; flex: 1; align-items: center;">
                                     <div class="prop-slider-unit" title="سماكة الإطار Stroke Width">
                                         <input type="range" class="prop-slider sl" id="rng-box-stroke-w" min="0" max="8" step="0.5" value="1.5">
                                         <div class="prop-val-box"><input type="number" id="inp-box-stroke-w" class="ni" value="1.5" min="0" max="15" step="0.5"><span class="unit">W</span></div>
