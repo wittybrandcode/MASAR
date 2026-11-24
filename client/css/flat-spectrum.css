@@ -1110,6 +1110,128 @@ div i.fa-regular {
     background: var(--success);
 }
 
+/* =============================================================================
+   ACTION BAR & BOTTOM BUTTONS (Ultra-Clean Icon-Only Trio)
+   ========================================================================== */
+#footer-bar.action-bar {
+    background: #0d0d12 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    height: 42px !important;
+    padding: 0 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+#footer-bar .actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+}
+
+/* Base Action Button Style for All Trio */
+#footer-bar .actions .ab {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #181820;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    cursor: pointer;
+    font-size: 14px;
+    position: relative;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+#footer-bar .actions .ab i {
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+#footer-bar .actions .ab:hover {
+    background: #242430;
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+#footer-bar .actions .ab:active {
+    transform: translateY(0);
+}
+
+/* Primary Action Button (Generate / Update ⚡) */
+#footer-bar .actions .ab-p {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.35) !important;
+}
+
+#footer-bar .actions .ab-p:hover {
+    background: var(--accent-light) !important;
+    border-color: var(--accent-light) !important;
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.6) !important;
+}
+
+#footer-bar .actions .ab-p:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Rebuild Button (🔄) */
+#btn-rebuild i {
+    transition: transform 0.3s ease;
+}
+
+#btn-rebuild:hover i {
+    transform: rotate(-90deg);
+}
+
+/* Live Sync Pill Button (📡) */
+#footer-bar .actions .live-pill {
+    background: #181820;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #64748b;
+}
+
+#footer-bar .actions .live-pill.active {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.25) !important;
+}
+
+#footer-bar .actions .live-pill .live-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50% !important;
+    background: #64748b;
+    transition: all 0.2s ease;
+}
+
+#footer-bar .actions .live-pill.active .live-dot {
+    background: var(--accent) !important;
+    box-shadow: 0 0 6px var(--accent) !important;
+    animation: live-pulse 2s infinite ease-in-out;
+}
+
 /* Live Sync Pill (Icon-Only!) */
 .live-pill {
     height: 26px;

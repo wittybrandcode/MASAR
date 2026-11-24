@@ -38,13 +38,13 @@ var TIME_RULER_HOST_BRIDGE = (function () {
     }
 
     function updateButtonLabel() {
+        var btn = $('btn-generate');
         var txt = $('txt-gen-btn');
-        if (!txt) return;
-        if (hasRulerInComp) {
-            txt.textContent = 'تحديث المسار في AFTER EFFECTS';
-        } else {
-            txt.textContent = 'بناء المسار في AFTER EFFECTS';
-        }
+        var titleText = hasRulerInComp 
+            ? 'تحديث وتطبيق المسار في After Effects' 
+            : 'بناء وتطبيق المسار في After Effects';
+        if (btn) btn.title = titleText;
+        if (txt) txt.textContent = '';
     }
 
     function updateCompStatus(callback) {
