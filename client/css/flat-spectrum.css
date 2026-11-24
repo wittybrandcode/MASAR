@@ -826,8 +826,8 @@ div i.fa-regular {
 .flat-controls-deck {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 0 !important;
+    gap: 12px !important;
+    padding: 6px 4px 24px 4px !important;
     overflow-y: auto;
     overflow-x: hidden !important;
     flex: 1;
@@ -836,55 +836,128 @@ div i.fa-regular {
     box-sizing: border-box !important;
 }
 
+/* Elevated Surface (Figma Surface 1 / Adobe Spectrum Inspector Card) */
 .flat-section {
-    background: var(--bg-card);
-    border: 1px solid var(--border-card);
+    background: #161722 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.6) !important;
+    box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3) !important;
     display: flex;
     flex-direction: column;
     width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
-    border-radius: 4px;
+    border-radius: 6px !important;
     overflow: hidden;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.flat-section:hover {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    border-top-color: rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 6px 22px -2px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Header Surface Cap (Adobe Spectrum Accordion Header / Figma Section Header) */
 .flat-section-header {
-    background: #131317;
-    border-bottom: 1px solid var(--border-subtle);
-    padding: 5px 8px;
+    background: linear-gradient(180deg, #222432 0%, #1a1c27 100%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-right: 3px solid var(--accent) !important;
+    padding: 7px 10px !important;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 700;
-    color: var(--text-secondary);
+    color: #ffffff !important;
     cursor: pointer;
     user-select: none;
+    transition: background 0.15s ease;
+}
+
+.flat-section-header:hover {
+    background: linear-gradient(180deg, #272a3a 0%, #1e202e 100%) !important;
+}
+
+.flat-section-header .sec-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+/* Monochrome / Single Accent Section Index Pill (Synced with HUD Rail 1-5) */
+.flat-section-header .sec-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34d399;
+    font-size: 10px;
+    font-weight: 800;
+    border-radius: 3px !important;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 .flat-section-header i.sec-icon {
     color: var(--accent-light);
-    margin-left: 5px;
+    font-size: 12px;
+    margin-left: 2px;
 }
 
+/* Chevron with Micro-Pill and Smooth Rotation */
+.flat-section-header .sec-chevron,
 .flat-section-header i.fa-chevron-up,
 .flat-section-header i.fa-chevron-down {
-    color: var(--text-dim);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px !important;
+    color: var(--text-muted);
     font-size: 10px;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease, background 0.15s ease;
 }
 
+.flat-section-header:hover .sec-chevron,
+.flat-section-header:hover i.fa-chevron-up,
+.flat-section-header:hover i.fa-chevron-down {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.flat-section.collapsed .sec-chevron,
+.flat-section.collapsed i.fa-chevron-up {
+    transform: rotate(180deg);
+}
+
+/* Card Interior Body (Sunken Base Surface) */
 .flat-section-body {
-    padding: 7px 8px !important;
+    padding: 10px 10px 12px 10px !important;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 7px !important;
     width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
+    background: #14151f !important;
 }
 
 .flat-section.collapsed .flat-section-body {
-    display: none;
+    display: none !important;
+}
+
+/* Hairline Sub-group Dividers */
+.prop-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+    margin: 3px 0;
+    width: 100%;
 }
 
 /* Single Flat Property Row */
@@ -933,10 +1006,12 @@ div i.fa-regular {
     min-width: 30px !important;
     width: 100% !important;
     -webkit-appearance: none;
-    height: 3px;
-    background: #1f1f26;
+    height: 4px !important;
+    background: #0b0c10 !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6) !important;
     outline: none;
     cursor: pointer;
+    border-radius: 2px !important;
 }
 
 .prop-slider::-webkit-slider-thumb {
@@ -946,7 +1021,8 @@ div i.fa-regular {
     background: var(--accent);
     cursor: pointer;
     transition: all 0.1s ease;
-    border-radius: 1px;
+    border-radius: 2px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .prop-slider::-webkit-slider-thumb:hover {
@@ -959,14 +1035,21 @@ div i.fa-regular {
     align-items: center !important;
     direction: ltr !important;
     gap: 1px !important;
-    background: var(--bg-input) !important;
+    background: #090a0f !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
     height: 20px !important;
-    padding: 0 3px !important;
+    padding: 0 4px !important;
     font-size: 9.5px !important;
     font-weight: 700 !important;
     flex-shrink: 0 !important;
-    border-radius: 2px !important;
+    border-radius: 3px !important;
+    transition: border-color 0.15s ease;
+}
+
+.prop-val-box:focus-within {
+    border-color: rgba(16, 185, 129, 0.5) !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.25) !important;
 }
 
 .prop-val-box input {
@@ -1009,11 +1092,13 @@ div i.fa-regular {
 /* Segmented Icon Toggle Group (Icons Only & Subdued) */
 .icon-seg-group {
     display: inline-flex !important;
-    background: #0d0d11;
-    border: 1px solid var(--border-subtle);
-    padding: 1px;
-    gap: 1px;
+    background: #0a0b10 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+    padding: 2px !important;
+    gap: 2px !important;
     flex-shrink: 0 !important;
+    border-radius: 4px !important;
 }
 
 .icon-seg-btn {
@@ -1029,6 +1114,7 @@ div i.fa-regular {
     justify-content: center;
     transition: all 0.12s ease;
     padding: 0 !important;
+    border-radius: 2px !important;
 }
 
 .icon-seg-btn:hover {
