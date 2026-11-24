@@ -81,10 +81,13 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
             grid.appendChild(tile);
         });
 
+        var previousGlobalShape = state.nodeShape || 'circle';
+
         if (!trigger._wiredModal) {
             trigger._wiredModal = true;
             trigger.addEventListener('click', function (e) {
                 e.stopPropagation();
+                previousGlobalShape = state.nodeShape || 'circle';
                 modal.classList.add('u-visible-flex');
                 modal.style.display = 'flex';
                 updateModalPreview(state.nodeShape);
@@ -105,16 +108,35 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
 
         if (btnClose && !btnClose._wired) {
             btnClose._wired = true;
-            btnClose.addEventListener('click', closeModal);
+            btnClose.addEventListener('click', function () {
+                if (state.nodeShape !== previousGlobalShape) {
+                    state.nodeShape = previousGlobalShape;
+                    if (callbacks && typeof callbacks.onUpdate === 'function') callbacks.onUpdate();
+                }
+                closeModal();
+            });
         }
         if (btnCancel && !btnCancel._wired) {
             btnCancel._wired = true;
-            btnCancel.addEventListener('click', closeModal);
+            btnCancel.addEventListener('click', function () {
+                if (state.nodeShape !== previousGlobalShape) {
+                    state.nodeShape = previousGlobalShape;
+                    if (callbacks && typeof callbacks.onUpdate === 'function') callbacks.onUpdate();
+                }
+                closeModal();
+            });
         }
         if (btnAccept && !btnAccept._wired) {
             btnAccept._wired = true;
             btnAccept.addEventListener('click', function () {
                 closeModal();
+                previousGlobalShape = state.nodeShape;
+                if (callbacks && typeof callbacks.onUpdate === 'function') callbacks.onUpdate();
+                if (typeof TIME_RULER_HOST_BRIDGE !== 'undefined') {
+                    var curShMeta = (typeof TR_SVG_SHAPES !== 'undefined') ? TR_SVG_SHAPES.getShapeById(state.nodeShape) : null;
+                    var sName = curShMeta ? curShMeta.name : state.nodeShape;
+                    TIME_RULER_HOST_BRIDGE.setFeedback('✓ تم تطبيق نمط العقد العام: ' + sName, 'ok');
+                }
             });
         }
 
@@ -509,9 +531,16 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
                 TR_SVG_SHAPES.addCustomShape(newShapeDef);
 
                 if (modalTargetNodeIndex >= 0 && state.nodes && state.nodes[modalTargetNodeIndex]) {
-                    state.nodes[modalTargetNodeIndex].customShape = sId;
-                    state.nodes[modalTargetNodeIndex].isHollow = currentImportHollow;
-                    state.nodes[modalTargetNodeIndex].customAnchor = currentImportAnchor;
+                    var targetNode = state.nodes[modalTargetNodeIndex];
+                    targetNode.customShape = sId;
+                    if (targetNode.sources && targetNode.sources.center) {
+                        targetNode.sources.center.shape = sId;
+                    }
+                    targetNode.isHollow = currentImportHollow;
+                    targetNode.customAnchor = currentImportAnchor;
+                    if (typeof TIME_RULER_STATE_STORE !== 'undefined') {
+                        TIME_RULER_STATE_STORE.syncLegacyNodeFields(targetNode, modalTargetNodeIndex);
+                    }
                 } else {
                     state.nodeShape = sId;
                 }

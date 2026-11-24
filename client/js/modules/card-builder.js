@@ -581,9 +581,14 @@ var TIME_RULER_CARD_BUILDER = (function () {
                     if (cType === 'shape_number') {
                         var btnEditShape = document.createElement('button');
                         btnEditShape.type = 'button';
-                        btnEditShape.className = 'btn-source-shape-edit';
-                        btnEditShape.innerHTML = '<i class="fa-solid fa-shapes"></i> <span>تخصيص الشكل</span>';
-                        btnEditShape.title = 'تخصيص شكل وحجم ولون هذه العقدة بشكل مستقل';
+                        btnEditShape.className = 'btn-source-shape-edit' + (isCustomized ? ' btn-source-shape-edit--custom' : '');
+                        var effCenterShapeObj = isCustomized ? curShapeObj : curGlobalObj;
+                        var centerThumb = (typeof TR_SVG_SHAPES !== 'undefined')
+                            ? TR_SVG_SHAPES.getSvgMarkup(effCenterShapeObj.id, (node.customColor || 'currentColor'), 14)
+                            : '<i class="fa-solid fa-shapes"></i>';
+                        var centerLabel = isCustomized ? curShapeObj.name : ('عام (' + curGlobalShapeName + ')');
+                        btnEditShape.innerHTML = '<span class="pill-thumb" style="width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;">' + centerThumb + '</span> <span>' + centerLabel + '</span>';
+                        btnEditShape.title = 'تخصيص شكل وحجم ولون هذه العقدة (اضغط لفتح محدد الأشكال)';
                         btnEditShape.addEventListener('click', function () {
                             openDrawerIndex = (openDrawerIndex === index) ? -1 : index;
                             renderNodesList();
@@ -610,9 +615,14 @@ var TIME_RULER_CARD_BUILDER = (function () {
                     } else if (cType === 'shape') {
                         var btnEditShape = document.createElement('button');
                         btnEditShape.type = 'button';
-                        btnEditShape.className = 'btn-source-shape-edit';
-                        btnEditShape.innerHTML = '<i class="fa-solid fa-shapes"></i> <span>تخصيص الشكل</span>';
-                        btnEditShape.title = 'تخصيص شكل وحجم ولون هذه العقدة بشكل مستقل';
+                        btnEditShape.className = 'btn-source-shape-edit' + (isCustomized ? ' btn-source-shape-edit--custom' : '');
+                        var effCenterShapeObj = isCustomized ? curShapeObj : curGlobalObj;
+                        var centerThumb = (typeof TR_SVG_SHAPES !== 'undefined')
+                            ? TR_SVG_SHAPES.getSvgMarkup(effCenterShapeObj.id, (node.customColor || 'currentColor'), 14)
+                            : '<i class="fa-solid fa-shapes"></i>';
+                        var centerLabel = isCustomized ? curShapeObj.name : ('عام (' + curGlobalShapeName + ')');
+                        btnEditShape.innerHTML = '<span class="pill-thumb" style="width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;">' + centerThumb + '</span> <span>' + centerLabel + '</span>';
+                        btnEditShape.title = 'تخصيص شكل وحجم ولون هذه العقدة (اضغط لفتح محدد الأشكال)';
                         btnEditShape.addEventListener('click', function () {
                             openDrawerIndex = (openDrawerIndex === index) ? -1 : index;
                             renderNodesList();
@@ -676,9 +686,14 @@ var TIME_RULER_CARD_BUILDER = (function () {
                     } else if (cType === 'shape_icon') {
                         var btnEditShape = document.createElement('button');
                         btnEditShape.type = 'button';
-                        btnEditShape.className = 'btn-source-shape-edit';
-                        btnEditShape.innerHTML = '<i class="fa-solid fa-shapes"></i> <span>تخصيص الشكل</span>';
-                        btnEditShape.title = 'تخصيص شكل وحجم ولون هذه العقدة بشكل مستقل';
+                        btnEditShape.className = 'btn-source-shape-edit' + (isCustomized ? ' btn-source-shape-edit--custom' : '');
+                        var effCenterShapeObj = isCustomized ? curShapeObj : curGlobalObj;
+                        var centerThumb = (typeof TR_SVG_SHAPES !== 'undefined')
+                            ? TR_SVG_SHAPES.getSvgMarkup(effCenterShapeObj.id, (node.customColor || 'currentColor'), 14)
+                            : '<i class="fa-solid fa-shapes"></i>';
+                        var centerLabel = isCustomized ? curShapeObj.name : ('عام (' + curGlobalShapeName + ')');
+                        btnEditShape.innerHTML = '<span class="pill-thumb" style="width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;">' + centerThumb + '</span> <span>' + centerLabel + '</span>';
+                        btnEditShape.title = 'تخصيص شكل وحجم ولون هذه العقدة (اضغط لفتح محدد الأشكال)';
                         btnEditShape.addEventListener('click', function () {
                             openDrawerIndex = (openDrawerIndex === index) ? -1 : index;
                             renderNodesList();
@@ -1246,6 +1261,9 @@ var TIME_RULER_CARD_BUILDER = (function () {
                 btnRevert.innerHTML = '<i class="fa-solid fa-arrow-rotate-left"></i> <span>استعادة النمط العام</span>';
                 btnRevert.addEventListener('click', function () {
                     node.customShape = 'inherit';
+                    if (node.sources && node.sources.center) {
+                        node.sources.center.shape = 'inherit';
+                    }
                     node.customColor = '';
                     node.customSize = null;
                     node.customStroke = '';
@@ -1255,9 +1273,14 @@ var TIME_RULER_CARD_BUILDER = (function () {
                     node.customHeight = null;
                     node.customWidth = null;
                     node.customAnchor = null;
+                    syncLegacyNodeFields(node, index);
                     saveState();
                     renderNodesList();
+                    renderTimelineHUD();
                     requestLiveSync(0);
+                    if (typeof TIME_RULER_HOST_BRIDGE !== 'undefined') {
+                        TIME_RULER_HOST_BRIDGE.setFeedback('✓ تم استعادة النمط العام للعقدة #' + (index + 1), 'ok');
+                    }
                 });
                 headActions.appendChild(btnRevert);
             } else {
@@ -1311,9 +1334,17 @@ var TIME_RULER_CARD_BUILDER = (function () {
             tileInherit.addEventListener('click', function (e) {
                 e.stopPropagation();
                 node.customShape = 'inherit';
+                if (node.sources && node.sources.center) {
+                    node.sources.center.shape = 'inherit';
+                }
+                syncLegacyNodeFields(node, index);
                 saveState();
                 renderNodesList();
+                renderTimelineHUD();
                 requestLiveSync(0);
+                if (typeof TIME_RULER_HOST_BRIDGE !== 'undefined') {
+                    TIME_RULER_HOST_BRIDGE.setFeedback('✓ العقدة #' + (index + 1) + ' تتبع النمط العام (' + curGlobalShapeName + ')', 'ok');
+                }
             });
             popGrid.appendChild(tileInherit);
 
@@ -1350,10 +1381,19 @@ var TIME_RULER_CARD_BUILDER = (function () {
                     tile.addEventListener('click', function (e) {
                         e.stopPropagation();
                         node.customShape = sh.id;
+                        if (node.sources && node.sources.center) {
+                            node.sources.center.shape = sh.id;
+                        }
                         node.isHollow = (sh.isHollow === true);
+                        syncLegacyNodeFields(node, index);
                         saveState();
                         renderNodesList();
+                        renderTimelineHUD();
                         requestLiveSync(0);
+                        if (typeof TIME_RULER_HOST_BRIDGE !== 'undefined') {
+                            var dispName = sanitizeSvgName(sh.name) || sh.name;
+                            TIME_RULER_HOST_BRIDGE.setFeedback('✓ تم تغيير شكل العقدة #' + (index + 1) + ' إلى: ' + dispName, 'ok');
+                        }
                     });
                     popGrid.appendChild(tile);
                 });
@@ -1403,6 +1443,9 @@ var TIME_RULER_CARD_BUILDER = (function () {
             function ensureNodeCustomized() {
                 if (node.customShape === 'inherit' || !node.customShape) {
                     node.customShape = effShapeForProps;
+                    if (node.sources && node.sources.center) {
+                        node.sources.center.shape = effShapeForProps;
+                    }
                 }
             }
 
@@ -1802,6 +1845,9 @@ var TIME_RULER_CARD_BUILDER = (function () {
             isCollapsed: false,
             sources: JSON.parse(JSON.stringify(orig.sources || {}))
         };
+        if (clone.sources && clone.sources.center) {
+            clone.sources.center.shape = clone.customShape;
+        }
         if (clone.sources && clone.sources.front) {
             clone.sources.front.title = (clone.sources.front.title || '') + ' (نسخة)';
         }

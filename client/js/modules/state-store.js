@@ -12,15 +12,35 @@ var TIME_RULER_STATE_STORE = (function () {
 
     var SHAPE_NAMES = {
         'inherit': 'يتبع العام',
-        'circle': 'دائرة',
-        'ring': 'حلقة',
+        'circle': 'دائرة مصمتة',
+        'ring': 'حلقة مفرغة',
         'square': 'مربع',
         'diamond': 'معين',
+        'pin': 'دبوس موقع',
+        'triangle_down': 'مثلث لأسفل',
+        'triangle_up': 'مثلث لأعلى',
         'triangle': 'مثلث',
         'hexagon': 'مسدس',
         'star': 'نجمة',
+        'badge': 'شارة',
+        'flag': 'راية',
+        'cross': 'علامة زائد',
+        'hud_bracket': 'قوس HUD',
+        'capsule': 'كبسولة',
         'tick': 'سن'
     };
+
+    function isValidShape(shapeId) {
+        if (!shapeId || typeof shapeId !== 'string') return false;
+        if (shapeId === 'inherit') return true;
+        if (SHAPE_NAMES.hasOwnProperty(shapeId)) return true;
+        if (shapeId.indexOf('custom_') === 0) return true;
+        if (typeof TR_SVG_SHAPES !== 'undefined' && typeof TR_SVG_SHAPES.getShapeById === 'function') {
+            var sh = TR_SVG_SHAPES.getShapeById(shapeId);
+            return !!(sh && sh.id === shapeId);
+        }
+        return false;
+    }
 
     var defaultState = {
         liveSync: true,
@@ -480,32 +500,41 @@ var TIME_RULER_STATE_STORE = (function () {
         node.id = node.id || ('node_' + (index + 1));
         if (node.isCollapsed === undefined) node.isCollapsed = false;
 
-        if (!node.customShape || (!SHAPE_NAMES[node.customShape] && node.customShape !== 'inherit')) {
-            node.customShape = 'inherit';
-        }
-        if (node.customColor === undefined) node.customColor = '';
-
         if (!node.sources || typeof node.sources !== 'object') {
             node.sources = {};
         }
+
+        // Two-way synchronization of shape candidate
+        var shapeCandidate = 'inherit';
+        if (isValidShape(node.customShape) && node.customShape !== 'inherit') {
+            shapeCandidate = node.customShape;
+        } else if (node.sources.center && isValidShape(node.sources.center.shape) && node.sources.center.shape !== 'inherit') {
+            shapeCandidate = node.sources.center.shape;
+        }
+        node.customShape = shapeCandidate;
+
+        var colorCandidate = (node.customColor && node.customColor.length > 0)
+            ? node.customColor
+            : ((node.sources.center && node.sources.center.color) ? node.sources.center.color : '');
+        node.customColor = colorCandidate;
 
         // 1. Center Source (on the timeline path)
         if (!node.sources.center) {
             var rawNum = (node.number !== undefined && node.number !== null) ? toStandardDigits(node.number) : ((index < 9 ? '0' : '') + (index + 1));
             node.sources.center = {
                 type: 'shape_number', // 'shape_number' | 'shape' | 'number' | 'icon' | 'text' | 'none'
-                shape: node.customShape || 'inherit',
+                shape: shapeCandidate,
                 value: rawNum,
                 visible: true,
-                color: node.customColor || ''
+                color: colorCandidate
             };
         } else {
             if (!node.sources.center.type) node.sources.center.type = 'shape_number';
             if (node.sources.center.value === undefined) node.sources.center.value = (node.number || String(index + 1));
             node.sources.center.value = toStandardDigits(node.sources.center.value);
-            if (node.sources.center.shape === undefined) node.sources.center.shape = (node.customShape || 'inherit');
+            node.sources.center.shape = shapeCandidate;
             if (node.sources.center.visible === undefined) node.sources.center.visible = true;
-            if (node.sources.center.color === undefined) node.sources.center.color = (node.customColor || '');
+            node.sources.center.color = colorCandidate;
         }
 
         // 2. Front Source (Top in horizontal, Right/Front in vertical)
@@ -611,8 +640,18 @@ var TIME_RULER_STATE_STORE = (function () {
         }
 
         if (c) {
-            node.customShape = c.shape || 'inherit';
-            if (c.color) node.customColor = c.color;
+            var finalShape = 'inherit';
+            if (c.shape && c.shape !== 'inherit' && isValidShape(c.shape)) {
+                finalShape = c.shape;
+            } else if (node.customShape && node.customShape !== 'inherit' && isValidShape(node.customShape)) {
+                finalShape = node.customShape;
+            }
+            node.customShape = finalShape;
+            c.shape = finalShape;
+
+            var finalColor = c.color || node.customColor || '';
+            node.customColor = finalColor;
+            c.color = finalColor;
         }
     }
 
@@ -653,7 +692,7 @@ var TIME_RULER_STATE_STORE = (function () {
             }
         } catch (e) {}
 
-        if (!stateObj.nodeShape || !SHAPE_NAMES[stateObj.nodeShape] || stateObj.nodeShape === 'inherit') {
+        if (!isValidShape(stateObj.nodeShape) || stateObj.nodeShape === 'inherit') {
             stateObj.nodeShape = 'circle';
         }
 
@@ -683,6 +722,7 @@ var TIME_RULER_STATE_STORE = (function () {
         saveState: saveState,
         loadSavedState: loadSavedState,
         toStandardDigits: toStandardDigits,
+        isValidShape: isValidShape,
         normalizeNodeSources: normalizeNodeSources,
         syncLegacyNodeFields: syncLegacyNodeFields,
         getUserTemplates: getUserTemplates,
