@@ -4,14 +4,16 @@
  */
 
 (function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        define([], factory);
-    } else if (typeof module === 'object' && module.exports) {
-        module.exports = factory();
-    } else {
-        root.TR_SVG_SHAPES = factory();
+    var exp = factory();
+    if (root) {
+        root.TR_SVG_SHAPES = exp;
     }
-}(typeof self !== 'undefined' ? self : this, function () {
+    if (typeof define === 'function' && define.amd) {
+        define([], function () { return exp; });
+    } else if (typeof module === 'object' && module.exports) {
+        module.exports = exp;
+    }
+}(typeof self !== 'undefined' ? self : (typeof window !== 'undefined' ? window : this), function () {
 
     var KAPPA = 0.5522847498307936;
 

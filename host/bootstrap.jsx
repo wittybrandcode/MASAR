@@ -167,7 +167,7 @@ function getActiveComp() {
         }
     }
 
-    // 5. Fallback: Search all items in project using proj.numItems and proj.item(i)
+    // 5. Fallback: Search all items in project for MASAR_CTRL or TIME_RULER_CTRL
     if (!comp) {
         try {
             var totalItems = (typeof proj.numItems === "number") ? proj.numItems : 0;
@@ -176,13 +176,14 @@ function getActiveComp() {
                 try { it = proj.item(i); } catch (eIt) {}
                 if (it && isComp(it)) {
                     var hasRuler = false;
-                    try { hasRuler = (it.layer("TIME_RULER_CTRL") !== null); } catch (eHR) {}
+                    try {
+                        hasRuler = (it.layer("MASAR_CTRL") !== null) || (it.layer("TIME_RULER_CTRL") !== null);
+                    } catch (eHR) {}
                     if (hasRuler) {
                         comp = it;
                         TR._lastActiveComp = comp;
                         return comp;
                     }
-                    if (!comp) comp = it;
                 }
             }
         } catch (e4) {}
@@ -190,6 +191,8 @@ function getActiveComp() {
 
     if (comp) {
         TR._lastActiveComp = comp;
+    } else {
+        TR._lastActiveComp = null;
     }
     return comp;
 }

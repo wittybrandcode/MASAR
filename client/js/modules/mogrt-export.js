@@ -6,6 +6,14 @@
 var TIME_RULER_MOGRT_EXPORTER = (function () {
     'use strict';
 
+    function notify(msg, type) {
+        if (typeof TIME_RULER_HOST_BRIDGE !== 'undefined' && TIME_RULER_HOST_BRIDGE.setFeedback) {
+            TIME_RULER_HOST_BRIDGE.setFeedback(msg, type || '');
+        } else if (typeof showToast === 'function') {
+            showToast(msg);
+        }
+    }
+
     function setupEssentialGraphics(onComplete) {
         if (typeof TIME_RULER_BRIDGE === 'undefined') return;
         var btnSetup = document.getElementById('btn-setup-eg');
@@ -21,13 +29,9 @@ var TIME_RULER_MOGRT_EXPORTER = (function () {
             }
             if (res && res.ok) {
                 var count = (res.data && res.data.addedCount) ? res.data.addedCount : 0;
-                if (typeof showToast === 'function') {
-                    showToast('تم ربط ' + count + ' خاصية بلوحة Essential Graphics بنجاح!');
-                }
+                notify('تم ربط ' + count + ' خاصية بلوحة Essential Graphics بنجاح!', 'ok');
             } else {
-                if (typeof showToast === 'function') {
-                    showToast('تنبيه: ' + (res ? res.message : 'تعذر ربط اللوحة'));
-                }
+                notify('تنبيه: ' + (res ? res.message : 'تعذر ربط اللوحة'), 'warn');
             }
             if (typeof onComplete === 'function') onComplete(res);
         });
@@ -48,14 +52,10 @@ var TIME_RULER_MOGRT_EXPORTER = (function () {
             }
             if (res && res.ok) {
                 var path = (res.data && res.data.path) ? res.data.path : 'المجلد الافتراضي';
-                if (typeof showToast === 'function') {
-                    showToast('تم تصدير قالب MOGRT بنجاح! المسار: ' + path);
-                }
+                notify('تم تصدير قالب MOGRT بنجاح! المسار: ' + path, 'ok');
             } else {
                 var errMsg = res ? res.message : 'خطأ غير معروف';
-                if (typeof showToast === 'function') {
-                    showToast('فشل التصدير: ' + errMsg);
-                }
+                notify('فشل التصدير: ' + errMsg, 'err');
             }
             if (typeof onComplete === 'function') onComplete(res);
         });

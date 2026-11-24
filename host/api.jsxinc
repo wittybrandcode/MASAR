@@ -1373,6 +1373,87 @@ TR.API = (function () {
         return safeRun(implListInstances, rawArg, "TIME RULER instances in the active composition.");
     };
 
+    api.setupEssentialGraphics = function (rawArg) {
+        var comp = null;
+        try { comp = TR.ae.composition.getActiveComp(); } catch (eComp) {
+            return (TR.JSON && typeof TR.JSON.stringify === "function")
+                ? TR.JSON.stringify({ ok: false, code: "NO_ACTIVE_COMP", message: "No active comp" })
+                : '{"ok":false,"code":"NO_ACTIVE_COMP","message":"No active comp"}';
+        }
+        if (!comp) {
+            return TR.JSON.stringify({ ok: false, code: "NO_ACTIVE_COMP", message: "No active comp" });
+        }
+        try {
+            app.beginUndoGroup("Setup Essential Graphics");
+            comp.motionGraphicsTemplateName = "MASAR - " + comp.name;
+            try { comp.openInEssentialGraphics(); } catch (eEG) {}
+
+            var added = 0;
+            for (var i = 1; i <= 50; i++) {
+                var tL = null; try { tL = comp.layer("MS_Node_" + i + "_Title") || comp.layer("TR_Node_" + i + "_Title"); } catch (e1) {}
+                if (tL && tL.enabled) {
+                    var pT = tL.property("Source Text");
+                    if (pT && typeof pT.canAddToMotionGraphicsTemplate === "function" && pT.canAddToMotionGraphicsTemplate(comp)) {
+                        try { pT.addToMotionGraphicsTemplate(comp); added++; } catch (e2) {}
+                    }
+                }
+                var dL = null; try { dL = comp.layer("MS_Node_" + i + "_Desc") || comp.layer("TR_Node_" + i + "_Desc"); } catch (e3) {}
+                if (dL && dL.enabled) {
+                    var pD = dL.property("Source Text");
+                    if (pD && typeof pD.canAddToMotionGraphicsTemplate === "function" && pD.canAddToMotionGraphicsTemplate(comp)) {
+                        try { pD.addToMotionGraphicsTemplate(comp); added++; } catch (e4) {}
+                    }
+                }
+            }
+            app.endUndoGroup();
+            return TR.JSON.stringify({ ok: true, code: "OK", message: "Essential Graphics configured with " + added + " properties.", data: { addedCount: added } });
+        } catch (err) {
+            try { app.endUndoGroup(); } catch (eEnd) {}
+            return TR.JSON.stringify({ ok: false, code: "EG_ERROR", message: err.toString() });
+        }
+    };
+
+    api.exportMOGRT = function (rawArg) {
+        var comp = null;
+        try { comp = TR.ae.composition.getActiveComp(); } catch (eComp) {
+            return TR.JSON.stringify({ ok: false, code: "NO_ACTIVE_COMP", message: "No active comp" });
+        }
+        if (!comp) {
+            return TR.JSON.stringify({ ok: false, code: "NO_ACTIVE_COMP", message: "No active comp" });
+        }
+        try {
+            api.setupEssentialGraphics();
+            var destFolder = new Folder(Folder.myDocuments.fsName + "/Adobe/Common/Motion Graphics Templates");
+            if (!destFolder.exists) {
+                try { destFolder.create(); } catch (eF) {}
+            }
+            if (!destFolder.exists) destFolder = Folder.myDocuments;
+
+            var cleanName = comp.name.replace(/[^a-zA-Z0-9_\u0600-\u06FF]/g, "_");
+            if (!cleanName || cleanName.length === 0) cleanName = "MASAR_Template";
+            var mogrtFile = new File(destFolder.fsName + "/" + cleanName + ".mogrt");
+
+            var exported = false;
+            try {
+                if (typeof app.beginSuppressDialogs === "function") app.beginSuppressDialogs();
+                exported = comp.exportAsMotionGraphicsTemplate(true, mogrtFile.fsName);
+            } catch (eInner) {
+                exported = false;
+            } finally {
+                if (typeof app.endSuppressDialogs === "function") app.endSuppressDialogs(false);
+            }
+
+            return TR.JSON.stringify({
+                ok: true,
+                code: "OK",
+                message: "MOGRT exported successfully to: " + mogrtFile.fsName,
+                data: { path: mogrtFile.fsName, exported: exported }
+            });
+        } catch (errExp) {
+            return TR.JSON.stringify({ ok: false, code: "MOGRT_EXPORT_ERROR", message: errExp.toString() });
+        }
+    };
+
     api._withUndo = withUndo;
 
     return api;

@@ -180,10 +180,12 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
         if (dropzone) dropzone.style.display = 'flex';
         if (pasteBox) pasteBox.style.display = 'none';
 
-        var btnSolid = $('btn-import-solid');
-        var btnHollow = $('btn-import-hollow');
-        if (btnSolid) btnSolid.classList.add('active');
-        if (btnHollow) btnHollow.classList.remove('active');
+        var segModalMode = $('seg-modal-render-mode');
+        if (segModalMode) {
+            segModalMode.querySelectorAll('button[data-mode]').forEach(function (b) {
+                b.classList.toggle('active', b.getAttribute('data-mode') === 'solid');
+            });
+        }
 
         var btnConfirm = $('btn-accept-svg-modal') || $('btn-confirm-svg-import');
         if (btnConfirm) btnConfirm.disabled = true;
@@ -480,7 +482,7 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
             });
         }
 
-        var btnConfirm = $('btn-confirm-svg-import');
+        var btnConfirm = $('btn-accept-svg-modal') || $('btn-confirm-svg-import');
         if (btnConfirm) {
             btnConfirm.addEventListener('click', function () {
                 if (!currentImportParsed || !currentImportParsed.ok) return;

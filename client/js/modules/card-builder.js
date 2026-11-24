@@ -1866,8 +1866,8 @@ var TIME_RULER_CARD_BUILDER = (function () {
         saveState();
         renderNodesList();
         renderTimelineHUD();
-        if (hasRulerInComp) {
-            executeHostGenerate(false, false);
+        if (typeof TIME_RULER_HOST_BRIDGE !== 'undefined' && TIME_RULER_HOST_BRIDGE.hasRulerInComp()) {
+            TIME_RULER_HOST_BRIDGE.executeHostGenerate(false, false);
         }
         var cont = $('nodes-container');
         if (cont) cont.scrollTop = cont.scrollHeight;
@@ -2022,10 +2022,12 @@ var TIME_RULER_CARD_BUILDER = (function () {
         updateReverseButtonUI();
 
         // 8. Execute in-place host update directly without forceRebuild (preserves AE comp layers)
-        executeHostGenerate(true, false, function (ok) {
-            var orderText = (state.sortOrder === 'desc') ? 'تنازلي (N ➔ 1)' : 'تصاعدي (1 ➔ N)';
-            setFeedback('✓ تم عكس ترتيب العقد: ' + orderText + ' (تحديث موضعي محفوظ)', 'ok');
-        });
+        if (typeof TIME_RULER_HOST_BRIDGE !== 'undefined' && TIME_RULER_HOST_BRIDGE.executeHostGenerate) {
+            TIME_RULER_HOST_BRIDGE.executeHostGenerate(true, false, function (ok) {
+                var orderText = (state.sortOrder === 'desc') ? 'تنازلي (N ➔ 1)' : 'تصاعدي (1 ➔ N)';
+                setFeedback('✓ تم عكس ترتيب العقد: ' + orderText + ' (تحديث موضعي محفوظ)', 'ok');
+            });
+        }
     }
 
     function updateReverseButtonUI() {

@@ -82,38 +82,44 @@ TR.ae.composition = (function () {
             if (isComp(item)) {
                 comp = item;
                 TR._lastActiveComp = comp;
+                return comp;
             }
         } catch (eA) { comp = null; }
 
-        // 2. Non-intrusive cached comp check (preserves active comp when CEP panel has focus)
-        // Note: NEVER call app.activeViewer.setActive() as that steals OS focus from the CEP panel!
-        if (comp === null && TR._lastActiveComp) {
-            try {
-                if (isComp(TR._lastActiveComp) && TR._lastActiveComp.parentFolder !== null) {
-                    comp = TR._lastActiveComp;
-                }
-            } catch (eCache) {
-                TR._lastActiveComp = null;
-            }
-        }
+        // 2. Active viewer check (preserves active comp when CEP panel has focus)
+        // Reading app.activeViewer.activeComp is non-intrusive and does NOT steal OS focus
+        try {
+            if (typeof app.activeViewer !== 'undefined' && app.activeViewer !== null) {
+                var isCompViewer = false;
+                try {
+                    if (typeof ViewerType !== 'undefined') {
+                        isCompViewer = (app.activeViewer.type === ViewerType.VIEWER_COMPOSITION);
+                    } else if (app.activeViewer.type === 1 || app.activeViewer.type === 'composition' || app.activeViewer.type === 'Composition') {
+                        isCompViewer = true;
+                    }
+                } catch (eType) { isCompViewer = false; }
 
-        // 3. Check selected items in project panel
+                if (isCompViewer && app.activeViewer.activeComp && isComp(app.activeViewer.activeComp)) {
+                    comp = app.activeViewer.activeComp;
+                    TR._lastActiveComp = comp;
+                    return comp;
+                }
+            }
+        } catch (eVw) { /* guarded */ }
+
+        // 3. Check selected items in project panel (single CompItem selected)
         if (comp === null) {
             try {
                 var sel = proj.selection;
-                if (sel && sel.length > 0) {
-                    for (var s = 0; s < sel.length; s++) {
-                        if (isComp(sel[s])) {
-                            comp = sel[s];
-                            TR._lastActiveComp = comp;
-                            break;
-                        }
-                    }
+                if (sel && sel.length === 1 && isComp(sel[0])) {
+                    comp = sel[0];
+                    TR._lastActiveComp = comp;
+                    return comp;
                 }
             } catch (eS) { /* guarded */ }
         }
 
-        // 4. Fallback: if composition exists in the project, use it
+        // 4. Fallback: only if EXACTLY 1 composition exists in the entire project
         if (comp === null) {
             try {
                 var total = (typeof proj.numItems === 'number') ? proj.numItems : 0;
@@ -128,14 +134,13 @@ TR.ae.composition = (function () {
                 if (foundComps.length === 1) {
                     comp = foundComps[0];
                     TR._lastActiveComp = comp;
-                } else if (foundComps.length > 1) {
-                    comp = foundComps[0];
-                    TR._lastActiveComp = comp;
+                    return comp;
                 }
             } catch (eItems) { /* guarded */ }
         }
 
         if (comp === null) {
+            TR._lastActiveComp = null;
             throw err('NO_ACTIVE_COMP', 'No active composition. Open a comp first.');
         }
         return comp;
