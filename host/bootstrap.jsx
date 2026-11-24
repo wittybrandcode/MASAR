@@ -891,8 +891,8 @@ TR.API = {
             var descColor = parseColor(cfg.descColor, [0.7, 0.7, 0.7]);
             var topOffset = parseFloat(cfg.topOffset) || 26;
 
-            var numberFontSize = parseFloat(cfg.numberFontSize) || 20;
-            var numberColor = parseColor(cfg.numberColor, [0.2, 0.65, 1.0]);
+            var numberFontSize = (cfg.numberFontSize !== undefined && cfg.numberFontSize !== null && parseFloat(cfg.numberFontSize) > 0) ? parseFloat(cfg.numberFontSize) : 20;
+            var numberColor = (cfg.numberColor && String(cfg.numberColor).length > 0) ? parseColor(cfg.numberColor, [0.02, 0.59, 0.41]) : parseColor("#059669", [0.02, 0.59, 0.41]);
             var bottomOffset = parseFloat(cfg.bottomOffset) || 26;
 
             var compCenter = [compW / 2, compH / 2];
@@ -1653,11 +1653,29 @@ TR.API = {
                                 nDoc.digitSet = DigitSet.ARABIC_DIGITS;
                             }
                         } catch (eDS) {}
-                        try { nDoc.fontSize = (cType === "text") ? Math.max(9, Math.round(effSize * 0.7)) : Math.max(10, Math.round(effSize * 0.95)); } catch (eNS) {}
-                        // High contrast text inside node shape
-                        var effCenterCol = [0.05, 0.05, 0.05]; // Black for white/light shapes
-                        if (isHollow || (effFill && (effFill[0] * 0.299 + effFill[1] * 0.587 + effFill[2] * 0.114) < 0.5)) {
-                            effCenterCol = [0.98, 0.98, 0.98]; // White for dark shapes
+                        var effNumSize = (cfg.numberFontSize && parseFloat(cfg.numberFontSize) > 0)
+                            ? parseFloat(cfg.numberFontSize)
+                            : numberFontSize;
+                        if (centerSrc && centerSrc.fontSize && parseFloat(centerSrc.fontSize) > 0) {
+                            effNumSize = parseFloat(centerSrc.fontSize);
+                        } else if (nodeData && nodeData.customNumberFontSize && parseFloat(nodeData.customNumberFontSize) > 0) {
+                            effNumSize = parseFloat(nodeData.customNumberFontSize);
+                        }
+                        try { nDoc.fontSize = (effNumSize > 0) ? effNumSize : ((cType === "text") ? Math.max(9, Math.round(effSize * 0.7)) : Math.max(10, Math.round(effSize * 0.95))); } catch (eNS) {}
+
+                        // Effective Center Number / Text Color:
+                        // User-selected numberColor from Tab 2 takes precedence, with per-node override support
+                        var effCenterCol = numberColor;
+                        if (centerSrc && (centerSrc.textColor || centerSrc.numColor)) {
+                            effCenterCol = parseColor(centerSrc.textColor || centerSrc.numColor, numberColor);
+                        } else if (nodeData && (nodeData.customTextColor || nodeData.numberColor)) {
+                            effCenterCol = parseColor(nodeData.customTextColor || nodeData.numberColor, numberColor);
+                        } else if (!cfg.numberColor && (!centerSrc || !centerSrc.color)) {
+                            // Fallback high contrast only if no explicit number color is provided
+                            effCenterCol = [0.05, 0.05, 0.05];
+                            if (isHollow || (effFill && (effFill[0] * 0.299 + effFill[1] * 0.587 + effFill[2] * 0.114) < 0.5)) {
+                                effCenterCol = [0.98, 0.98, 0.98];
+                            }
                         }
                         try { nDoc.fillColor = effCenterCol; } catch (eNC) {}
                         try { nDoc.applyFill = true; } catch (eNAF) {}

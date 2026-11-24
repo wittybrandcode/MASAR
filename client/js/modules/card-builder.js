@@ -599,6 +599,7 @@ var TIME_RULER_CARD_BUILDER = (function () {
                         inpNum.className = 'node-input-num';
                         inpNum.placeholder = '01';
                         inpNum.value = node.sources.center.value || '';
+                        inpNum.style.color = (node.sources && node.sources.center && node.sources.center.textColor) ? node.sources.center.textColor : (state.numberColor || '#10b981');
                         inpNum.title = 'الرقم المكتوب داخل أو بجانب مركز العقدة';
                         inpNum.addEventListener('focus', function () { selectNode(index); });
                         inpNum.addEventListener('input', function (e) {

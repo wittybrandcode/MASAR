@@ -170,4 +170,53 @@ test('host-bridge vector generation produces valid subpaths', () => {
     assert.strictEqual(enriched[2].vectorData.subPaths.length > 0, true, 'Node 3 has star vector path');
 });
 
+// 8. Number Color and Font Size in state & config
+test('numberColor and numberFontSize exist and serialize correctly', () => {
+    const state = stateStoreModule.getDefaultState();
+    assert.strictEqual(typeof state.numberColor, 'string', 'numberColor must be string');
+    assert.strictEqual(typeof state.numberFontSize, 'number', 'numberFontSize must be number');
+
+    state.numberColor = '#f59e0b';
+    state.numberFontSize = 24;
+    stateStoreModule.saveState(state, true);
+
+    const reloaded = stateStoreModule.getDefaultState();
+    stateStoreModule.loadSavedState(reloaded);
+    assert.strictEqual(reloaded.numberColor, '#f59e0b', 'numberColor must persist');
+    assert.strictEqual(reloaded.numberFontSize, 24, 'numberFontSize must persist');
+});
+
+// 9. Bootstrap inner number color resolution logic
+test('bootstrap color logic respects numberColor with node override support', () => {
+    function parseColor(hex, fallback) {
+        if (!hex || typeof hex !== 'string') return fallback;
+        var clean = hex.replace('#', '').trim();
+        if (clean.length === 6) {
+            return [
+                parseInt(clean.substr(0, 2), 16) / 255,
+                parseInt(clean.substr(2, 2), 16) / 255,
+                parseInt(clean.substr(4, 2), 16) / 255
+            ];
+        }
+        return fallback;
+    }
+
+    const cfg = { numberColor: '#10b981', numberFontSize: 20 };
+    const numberColor = (cfg.numberColor && String(cfg.numberColor).length > 0)
+        ? parseColor(cfg.numberColor, [0.02, 0.59, 0.41])
+        : parseColor('#059669', [0.02, 0.59, 0.41]);
+
+    // Case A: Global numberColor applied to standard node
+    const nodeA = { number: '01', sources: { center: {} } };
+    let effA = numberColor;
+    if (nodeA.sources.center.textColor) effA = parseColor(nodeA.sources.center.textColor, numberColor);
+    assert.deepStrictEqual(effA, parseColor('#10b981', [0,0,0]), 'Node A must receive global #10b981');
+
+    // Case B: Per-node textColor override
+    const nodeB = { number: '02', sources: { center: { textColor: '#f43f5e' } } };
+    let effB = numberColor;
+    if (nodeB.sources.center.textColor) effB = parseColor(nodeB.sources.center.textColor, numberColor);
+    assert.deepStrictEqual(effB, parseColor('#f43f5e', [0,0,0]), 'Node B must receive custom #f43f5e');
+});
+
 console.log('SUMMARY: Passed ' + passCount + ' tests successfully.');

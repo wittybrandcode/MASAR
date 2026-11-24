@@ -46,12 +46,21 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
     function bindColorPicker(inpId, prop, state, onUpdate) {
         var el = $(inpId);
         if (!el) return;
+        function updateParentSwatch(val) {
+            var wrap = el.parentElement;
+            if (wrap && (wrap.classList.contains('micro-color-swatch') || wrap.classList.contains('ci-wrap'))) {
+                wrap.style.background = val;
+            }
+        }
+        updateParentSwatch(el.value);
         el.addEventListener('input', function () {
             state[prop] = el.value;
+            updateParentSwatch(el.value);
             if (typeof onUpdate === 'function') onUpdate(60);
         });
         el.addEventListener('change', function () {
             state[prop] = el.value;
+            updateParentSwatch(el.value);
             if (typeof onUpdate === 'function') onUpdate(0);
         });
     }
@@ -140,13 +149,23 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
         setPairVal('rng-top-offset', 'inp-top-offset', state.topOffset);
         setPairVal('rng-bot-offset', 'inp-bot-offset', state.bottomOffset);
 
-        var inpLineCol = $('inp-line-color'); if (inpLineCol) inpLineCol.value = state.lineColor;
-        var inpCircFill = $('inp-circ-fill'); if (inpCircFill) inpCircFill.value = state.circleFill;
-        var inpCircStr = $('inp-circ-stroke'); if (inpCircStr) inpCircStr.value = state.circleStroke;
-        var inpTickCol = $('inp-tick-color'); if (inpTickCol) inpTickCol.value = state.tickColor;
-        var inpTitleCol = $('inp-title-color'); if (inpTitleCol) inpTitleCol.value = state.titleColor;
-        var inpDescCol = $('inp-desc-color'); if (inpDescCol) inpDescCol.value = state.descColor;
-        var inpNumCol = $('inp-num-color'); if (inpNumCol) inpNumCol.value = state.numberColor;
+        function syncColorPickerVal(inpId, val) {
+            var inp = $(inpId);
+            if (!inp) return;
+            inp.value = val;
+            var wrap = inp.parentElement;
+            if (wrap && (wrap.classList.contains('micro-color-swatch') || wrap.classList.contains('ci-wrap'))) {
+                wrap.style.background = val;
+            }
+        }
+
+        syncColorPickerVal('inp-line-color', state.lineColor);
+        syncColorPickerVal('inp-circ-fill', state.circleFill);
+        syncColorPickerVal('inp-circ-stroke', state.circleStroke);
+        syncColorPickerVal('inp-tick-color', state.tickColor);
+        syncColorPickerVal('inp-title-color', state.titleColor);
+        syncColorPickerVal('inp-desc-color', state.descColor);
+        syncColorPickerVal('inp-num-color', state.numberColor || '#059669');
 
         setSegmentActive('seg-orientation', 'data-orientation', state.orientation);
         setSegmentActive('seg-spacing', 'data-spacing', state.spacingMode);
