@@ -69,7 +69,7 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
 
         var dashRow = $('row-dash-settings');
         if (dashRow) {
-            dashRow.style.display = (state.lineStyle === 'dashed' || state.lineStyle === 'dotted') ? 'grid' : 'none';
+            dashRow.style.display = (state.lineStyle === 'dashed' || state.lineStyle === 'dotted') ? 'flex' : 'none';
         }
         var cellDashSize = $('cell-dash-size');
         if (cellDashSize) {
@@ -95,10 +95,10 @@ var TIME_RULER_GLOBAL_CONTROLS = (function () {
 
         if (s === 'tick') {
             if (circGrp) circGrp.style.display = 'none';
-            if (tickGrp) tickGrp.style.display = 'grid';
+            if (tickGrp) tickGrp.style.display = 'flex';
         } else {
             if (tickGrp) tickGrp.style.display = 'none';
-            if (circGrp) circGrp.style.display = 'grid';
+            if (circGrp) circGrp.style.display = 'flex';
 
             if (subHead) {
                 var thumb = shapeMeta ? TR_SVG_SHAPES.getSvgMarkup(shapeMeta.id, 'currentColor', 14) : '';
