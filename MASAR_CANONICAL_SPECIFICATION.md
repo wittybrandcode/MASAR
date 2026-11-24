@@ -250,6 +250,77 @@ src.transform.position + [r.left + r.width / 2, r.top + r.height / 2];
 
 ---
 
+## 13. الجرد التفصيلي لكافة متحكمات الثوابت عبر المستويات الثلاثة (The 3-Tier Controllers Inventory)
+
+تعتمد هندسة MASAR PRO على **3 مستويات تحكم متزامنة لحظياً (Real-Time Reactive Pipeline)**:
+1. **الطبقة 1 (CEP UI Controls):** المتحكمات البصرية في واجهة اللوحة (سلايدرات، أزرار أيقونية، منتقيات ألوان، مسطرة HUD).
+2. **الطبقة 2 (State Store):** كائن الحالة البرمجي التفاعلي الذي يحتفظ بالقيم ويحفظها محلياً في `localStorage` وصيغ JSON.
+3. **الطبقة 3 (After Effects Host):** طبقات وخصائص ومتحكمات After Effects (`MASAR_CTRL` Null, ADBE Expression Controls, Shape Geometries, sourceRect Expressions).
+
+### جدول الجرد الحصري لكل متحكم في النظام:
+
+| الثابت ومكونه الفرعي | نوع المتحكم في الواجهة (UI Control) | معرف العنصر (Element ID) | متغير كائن الحالة (State Key) | المتحكم والخاصية في After Effects |
+| :--- | :--- | :--- | :--- | :--- |
+| **01. المستقيم: الاتجاه** | أزرار أيقونية (عمودي / أفقي) | `#seg-orientation` | `state.orientation` | إحداثيات مسار `lineShape.vertices` وتوجيه المحاور |
+| **01. المستقيم: نمط التوزيع** | أزرار أيقونية (تلقائي / ثابت) | `#seg-spacing` | `state.spacingMode` | معادلة المسافة الخطية بين محطات العقد |
+| **01. المستقيم: الطول الكلي** | سلايدر + حقل رقمي (400-4000 px) | `#rng-length` / `#inp-length` | `state.length` | حساب نصف الطول `halfLen` لنقاط البداية والنهاية |
+| **01. المستقيم: التباعد الثابت** | سلايدر + حقل رقمي (50-1500 px) | `#rng-gap` / `#inp-gap` | `state.spacingGap` | قيمة القفزة الثابتة `step = spacingGap` |
+| **01. المستقيم: سماكة الخط** | سلايدر + حقل رقمي (1-30 px) | `#rng-line-w` / `#inp-line-w` | `state.lineWidth` | خاصية `ADBE Vector Stroke Width` في `MS_Baseline` |
+| **01. المستقيم: لون الخط** | مربع لون منبثق (Color Swatch) | `#inp-line-color` | `state.lineColor` | خاصية `ADBE Vector Stroke Color` في `MS_Baseline` |
+| **01. المستقيم: نمط الستروك** | أزرار أيقونية (متصل/متقطع/منقط) | `#seg-line-style` | `state.lineStyle` | تفعيل وضبط مصفوفة `ADBE Vector Stroke Dashes` |
+| **01. المستقيم: حافة الخط** | أزرار أيقونية (حادة/دائرية/مربعة) | `#seg-line-cap` | `state.lineCap` | خاصية `LineCap` (Round / Butt / Projecting) |
+| **01. المستقيم: قياس الشرطة** | سلايدر + حقل رقمي (2-60 px) | `#rng-dash-size` | `state.dashSize` | قيمة `Dash` في ستروك الشيب |
+| **01. المستقيم: فراغ الشرطة** | سلايدر + حقل رقمي (3-60 px) | `#rng-dash-gap` | `state.dashGap` | قيمة `Gap` في ستروك الشيب |
+| **02. النهايات: طرف البداية** | أزرار أيقونية (بدون/سهم/نقطة/سن) | `#seg-start-terminal` | `state.startTerminal` | مسار فيكتور متطابق عند `startPt` في `MS_Baseline` |
+| **02. النهايات: طرف النهاية** | أزرار أيقونية (بدون/سهم/نقطة/سن) | `#seg-end-terminal` | `state.endTerminal` | مسار فيكتور متطابق عند `endPt` في `MS_Baseline` |
+| **03. الصناديق: النمط العام** | أزرار أيقونية (بدون/زجاجي/صلب) | `#seg-box-mode` | `state.boxMode` | تفعيل/تعطيل وتطبيق الشفافية على طبقات الصناديق |
+| **03. الصناديق: شفافية العنوان** | سلايدر + حقل نسبة (0-100 %) | `#rng-title-box-fill-op` | `state.titleBoxFillOpacity` | سلايدر `Fill Opacity` (ADBE Slider) على الطبقة |
+| **03. الصناديق: لون تعبئة العنوان** | مربع لون منبثق | `#inp-title-box-fill-color` | `state.titleBoxFillColor` | متحكم لون `Fill Color` (ADBE Color Control) |
+| **03. الصناديق: تدوير العنوان** | سلايدر + حقل رقمي (0-30 px) | `#rng-title-box-radius` | `state.titleBoxRadius` | سلايدر `Corner Radius` (ADBE Slider) بتعبير الشيب |
+| **03. الصناديق: إطار العنوان** | مربع لون منبثق | `#inp-title-box-stroke-color`| `state.titleBoxStrokeColor` | متحكم لون `Stroke Color` (ADBE Color Control) |
+| **03. الصناديق: شفافية الشرح** | سلايدر + حقل نسبة (0-100 %) | `#rng-desc-box-fill-op` | `state.descBoxFillOpacity` | سلايدر `Fill Opacity` على طبقة `Desc_Box` |
+| **03. الصناديق: لون تعبئة الشرح** | مربع لون منبثق | `#inp-desc-box-fill-color` | `state.descBoxFillColor` | متحكم لون `Fill Color` على طبقة `Desc_Box` |
+| **03. الصناديق: تدوير الشرح** | سلايدر + حقل رقمي (0-30 px) | `#rng-desc-box-radius` | `state.descBoxRadius` | سلايدر `Corner Radius` على طبقة `Desc_Box` |
+| **03. الصناديق: إطار الشرح** | مربع لون منبثق | `#inp-desc-box-stroke-color` | `state.descBoxStrokeColor` | متحكم لون `Stroke Color` على طبقة `Desc_Box` |
+| **03. الصناديق: الحاشية (Padding)** | حقول أفقية ورأسية مدمجة | درج كل عقدة | `boxPaddingH`, `boxPaddingV` | سلايدرات `Padding H` و `Padding V` بتعابير `sourceRect` |
+| **04. العقدة: شكل العقدة العام** | منتقي أشكال منبثق (8 أشكال + SVG) | `#btn-global-shape-trigger` | `state.nodeShape` | مجموعات فيكتور هندسية داخل طبقة `MS_Nodes` |
+| **04. العقدة: حجم العقدة** | سلايدر + حقل رقمي (4-60 px) | `#rng-circ-r` | `state.circleRadius` | أبعاد الشيب الهندسي في فيكتور كل عقدة |
+| **04. العقدة: لون تعبئة العقدة** | مربع لون منبثق | `#inp-circ-fill` | `state.circleFill` | خاصية `ADBE Vector Fill Color` في مجموعة العقدة |
+| **04. العقدة: سماكة إطار العقدة** | سلايدر + حقل رقمي (0-15 px) | `#rng-circ-sw` | `state.circleStrokeWidth` | خاصية `ADBE Vector Stroke Width` في مجموعة العقدة |
+| **04. العقدة: لون إطار العقدة** | مربع لون منبثق | `#inp-circ-stroke` | `state.circleStroke` | خاصية `ADBE Vector Stroke Color` في مجموعة العقدة |
+| **04. العقدة: ارتفاع السن (Tick)** | سلايدر + حقل رقمي (8-120 px) | `#rng-tick-h` | `state.tickHeight` | نصف ارتفاع السن `tickHalf = tickHeight / 2` |
+| **04. العقدة: عرض ولون السن** | سلايدر + مربع لون | `#rng-tick-w` / `#inp-tick-color` | `state.tickWidth`, `tickColor` | سمك ولون خط الـ Stroke الخاص بالسن |
+| **04. العقدة: تخصيص محطة مفردة** | زر شيب كبسولي في بطاقة العقدة | `.node-shape-pill` | `node.customShape`, `customColor` | كود التوليد المستقل للشكل داخل طبقة `MS_Nodes` |
+| **05. المنابع: المنبع الأوسط** | درج المنبع الأوسط ببطاقة العقدة | حقول نوع وقيمة وأيقونة | `node.sources.center` | طبقة النص **`MS_Node_i_Num`** بتعبير التوسيط الدقيق |
+| **05. المنابع: المنبع الأمامي** | حقول العنوان والشرح والقائمة | مدخلات البطاقة المباشرة | `node.sources.front` | طبقات **`MS_Node_i_Title`** و **`MS_Node_i_Desc`** |
+| **05. المنابع: المنبع الخلفي** | قسم المنبع الخلفي بدرج البطاقة | حقول النوع والنص والشارة | `node.sources.behind` | طبقة **`MS_Node_i_Behind`** على المحور المقابل |
+| **05. المنابع: قياس الرقم الداخلي** | سلايدر + حقل رقمي (10-60 pt) | `#rng-num-size` | `state.numberFontSize` | خاصية `fontSize` في `TextDocument` الخاص بطبقة `Num` |
+| **05. المنابع: لون الرقم الداخلي** | مربع لون منبثق | `#inp-num-color` | `state.numberColor` | خاصية `fillColor` في `TextDocument` الخاص بطبقة `Num` |
+| **06. المخرجات: مصفوفة الأنماط 9** | قائمة منسدلة داخل كل منبع | قوائم اختيار النمط بالدرج | `sources.*.type` | تفعيل وتعطيل الطبقات النصية وتوليد التعداد النقطي |
+| **07. التموضع: خط العنوان** | سلايدر + حقل (12-60 pt) + لون | `#rng-title-size` / `#inp-title-color`| `state.titleFontSize`, `titleColor` | خصائص الخط والتعبئة في طبقة `Title` |
+| **07. التموضع: خط الشرح** | سلايدر + حقل (9-36 pt) + لون | `#rng-desc-size` / `#inp-desc-color` | `state.descFontSize`, `descColor` | خصائص الخط والتعبئة في طبقة `Desc` |
+| **07. التموضع: جهة التموضع** | أزرار أيقونية (يسار / متناوب / يمين) | `#seg-content-side` | `state.contentSide` | إشارة الإزاحة (+ أو -) عن خط المستقيم |
+| **07. التموضع: محاذاة النص** | أزرار أيقونية (تلقائي/يمين/وسط/يسار) | `#seg-text-align` | `state.textAlign` | خاصية `justification` (Paragraph Justification) |
+| **07. التموضع: خلوص الإزاحة العليا** | سلايدر + حقل (5-100 px) | `#rng-top-offset` | `state.topOffset` | معادلة `topClear = nodeExtent + topOffset + 4` |
+| **07. التموضع: خلوص الإزاحة السفلى** | سلايدر + حقل (5-100 px) | `#rng-bot-offset` | `state.bottomOffset` | معادلة `botClear = nodeExtent + bottomOffset + 4` |
+| **08. المتحكم العام: نل التحكم** | طبقة رئيسية يتم توليدها في AE | طبقة ذهبية في الكومب | مركز الكومبوزيشن | طبقة النل **`MASAR_CTRL`** (الأصل الحاكم لكافة الطبقات) |
+| **08. المتحكم العام: المزامنة الحية** | زر كبسولي عائم مع مؤشر نبضي | `#btn-live-sync` | `state.liveSync` | معالج التحديث التلقائي الفوري للكومبوزيشن |
+| **08. المتحكم العام: التطبيق المباشر** | زر رئيسي في شريط الإجراءات | `#btn-generate` | دالة `TR.API.generate()` | إطلاق دورة التحديث الموضعي الذكي In-Place |
+| **08. المتحكم العام: إعادة البناء** | زر ثانوي في شريط الإجراءات | `#btn-rebuild` | استدعاء مع `forceRebuild: true` | مسح وإعادة رسم وتوسيط الشبكة في الكومبوزيشن |
+| **09. مسطرة HUD: الكانفاس الأفقي** | كانفاس تفاعلي علوي | `#timeline-hud-canvas` | ربط مع العقد والمواقع | مرآة فيزيائية حية للمواقع مع دعم النقر والسحب |
+| **09. مسطرة HUD: المجرى العمودي** | شريط كانفاس عمودي جانبي | `#hud-vertical-rail` | ربط مع التدفق العمودي | عرض العقد وتحديد المحطة النشطة رأسياً |
+| **09. مسطرة HUD: زر زاوية التبديل** | زر أيقوني في الركن العلوي الأيمن | `#btn-hud-corner` | تبديل `state.orientation` | تحويل المسار والكومبوزيشن بنقرة زر واحدة |
+| **10. إدارة البيانات: إضافة عقدة** | زر أخضر بشريط الأدوات | `#btn-add-node` | إضافة عنصر إلى `nodes[]` | توليد طبقات المحطة الجديدة فورياً |
+| **10. إدارة البيانات: الاستيراد الدفعي** | نافذة منبثقة ذكية بفاصل `\|` | `#btn-open-batch-import` | دالة `applyBatchImport()` | معالجة مصفوفة العقد دفعة واحدة |
+| **10. إدارة البيانات: قلب الترتيب** | زر شريط الأدوات | `#btn-reverse-nodes` | عكس ترتيب مصفوفة العقد | تحديث مواقع وطبقات الكومبوزيشن تلقائياً |
+| **10. إدارة البيانات: رقائق الأنماط** | شرائح أيقونية (`01`, سنوات, مراحل) | `.pattern-chip` | توليد ترقيم تلقائي | تطبيع وتحديث نصوص العقد |
+| **11. القوالب: باليتات الألوان السريعة** | شريط عينات ألوان (5 باليتات) | `.palette-btn` | تطبيق ألوان متناسقة | تحديث كامل لألوان الخطوط والعقد والصناديق |
+| **11. القوالب: قوالب الأنماط الستة** | شريط أيقونات القوالب السريعة | `.preset-chip` | كائن القالب المختار | تطبيق فوري لخصائص الخط والعقد والحركات |
+| **11. القوالب: نافذة القوالب والحفظ** | نافذة شاملة لقوالب النظام والمخصصة | `#btn-header-presets` + Modal | `PRESETS` + `localStorage` | حفظ واسترجاع وتصدير قوالب JSON كاملة |
+| **12. تصدير MOGRT: زر الحزم** | زر تصدير حزمة كاملة لبريمير برو | `#btn-export-mogrt` | دالة `exportMogrt()` | إنشاء ملف `.mogrt` مع Responsive Markers محمية |
+
+---
+
 <div align="center">
 
 ### 🔒 الخاتمة والإغلاق المعماري الصارم
