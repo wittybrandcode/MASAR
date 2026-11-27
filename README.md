@@ -12,8 +12,8 @@
 # MASAR PRO — مسار موشن جرافيك تايم لاين 🎬
 ### *The Next-Gen Motion Timeline & Infographics Engine for Adobe After Effects*
 
-[![Version](https://img.shields.io/badge/Version-2.5.0-10b981?style=for-the-badge&logo=git&logoColor=white)](https://github.com/wittybrandcode/MASAR)
-[![Adobe AE](https://img.shields.io/badge/Adobe%20After%20Effects-2020%20--%202025+-9999FF?style=for-the-badge&logo=adobeaftereffects&logoColor=white)](https://www.adobe.com/products/aftereffects.html)
+[![Version](https://img.shields.io/badge/Version-1.0.0-10b981?style=for-the-badge&logo=git&logoColor=white)](https://github.com/wittybrandcode/MASAR)
+[![Adobe AE](https://img.shields.io/badge/Adobe%20After%20Effects-23.0%2B-9999FF?style=for-the-badge&logo=adobeaftereffects&logoColor=white)](https://www.adobe.com/products/aftereffects.html)
 [![CEP Engine](https://img.shields.io/badge/CEP-11.0%20%7C%20ES3%20ExtendScript-059669?style=for-the-badge)](https://github.com/Adobe-CEP)
 [![UI System](https://img.shields.io/badge/UI-Adobe%20Spectrum%20Emerald-047857?style=for-the-badge)](https://spectrum.adobe.com/)
 [![License](https://img.shields.io/badge/License-Proprietary%20%7C%20Commercial-334155?style=for-the-badge)]#
@@ -40,7 +40,7 @@
 
 * **💎 واجهة زمردية عصرية (Spectrum Emerald UI):** تصميم بصري هادئ وفائق الأناقة مستوحى من نظام Adobe Spectrum، مبني بنظام Dual-Tab وبكثافة لونية خالية من أي تشويش لراحة العين أثناء العمل الطويل.
 * **⚡ توليد إجرائي فوري (Zero-Lag Procedural Generation):** توليد كامل للطبقات الأصلية (Native Shape & Text Layers) مع ربط تعبيري ديناميكي (Dynamic Expressions) بمعدل أداء يصل إلى 60 إطاراً في الثانية.
-* **📐 تحكم هندسي مطلق (Parametric Baseline & Node Geometry):** تحكم في سماكة الخط، أنماط الخطوط (مصمت، متقطع، منقط)، أطراف المسار (أسهم، نقاط، عوارض)، و 8 أشكال هندسية رئيسية للعقد (دوائر، حلقات، مربعات، معينات، مسدسات، نجوم، وأسنان).
+* **📐 تحكم هندسي مطلق (Parametric Baseline & Node Geometry):** تحكم في سماكة الخط، أنماط الخطوط (مصمت، متقطع، منقط)، أطراف المسار (أسهم، نقاط، عوارض)، وأكثر من 15 شكلاً متجهاً للعقد (دوائر، حلقات، مربعات، معينات، دبابيس، مؤشرات، دروع، رايات، أقواس HUD، مسدسات، نجوم، كبسولات، وأسنان) مع دعم استيراد أي ملف SVG مخصص.
 * **🗂️ نظام الصناديق الذرية التلقائية (Atomic Auto-Sizing Box Drawers):** صناديق خلفية بارامترية تلتف حول النصوص وتتوسع ذاتياً مع كتابة وتعديل النصوص، مع تحكم فردي بكل عقدة على حدة.
 * **🌐 دعم كامل وحقيقي للغة العربية (True RTL & Bilingual Typography):** معالجة متقدمة لاتجاه النصوص العربية ومحاذاة القوائم النقطية والرموز والأرقام دون الحاجة لأي وسيط خارجي.
 * **📦 تجهيز فوري لقوالب MOGRT:** تصدير مباشر إلى قوالب Essential Graphics لبرنامج Premiere Pro مع حماية الحركات الافتتاحية والختامية عبر مناطق التوقيت التفاعلية (Responsive Design Time Markers).
@@ -138,7 +138,7 @@ sequenceDiagram
 
 ### المتطلبات:
 * نظام **Windows 10 / 11** أو **macOS 10.15+**.
-* برنامج **Adobe After Effects 2020** فما فوق (حتى أحدث إصدار v25+).
+* برنامج **Adobe After Effects 2023 (v23.0)** فما فوق (حسب نطاق التوافق `[23.0,99.9]` في `CSXS/manifest.xml`).
 
 ### 1. نسخ الإضافة إلى مسار ملحقات أدوبي (CEP Extensions):
 
@@ -204,27 +204,31 @@ http://localhost:8092
 
 ```text
 MASAR/
-├── .debug                     # ملف تكوين منفذ التصحيح (Port 8092)
-├── .gitignore                 # استبعاد الملفات المؤقتة والمسودات
-├── CHANGELOG.md               # سجل التحديثات والإصدارات
+├── .debug                           # ملف تكوين منفذ التصحيح (Port 8092)
+├── .gitignore                       # استبعاد الملفات المؤقتة والمسودات
 ├── CSXS/
-│   └── manifest.xml           # تعريف الحزمة وهوية MASAR PRO لدى After Effects
-├── LICENSES.md                # تراخيص المكونات والخطوط
-├── MASAR_BUILD_SPEC.md        # المواصفات الفنية المعتمدة للمشروع
-├── README.md                  # دليل المشروع والتوثيق الشامل
-├── client/                    # واجهة المستخدم (HTML5, Modern CSS, Modular JS)
-│   ├── assets/                # خطوط Cairo و Phosphor المدمجة
-│   ├── css/                   # أنماط Spectrum وثيم الزمرد المتطور
+│   └── manifest.xml                 # تعريف الحزمة ونطاق التوافق (AEFT 23.0+, CSXS 11.0)
+├── README.md                        # دليل المشروع والتوثيق الشامل
+├── client/                          # واجهة المستخدم (HTML5, Offline Fonts & SVG Icons, Modular JS)
+│   ├── assets/
+│   │   ├── fonts/                   # خطوط Cairo و Phosphor Bold المحلية بدون اتصال
+│   │   └── icons/masar-icons.svg    # مكتبة أيقونات SVG الخفيفة المدمجة
+│   ├── css/                         # 01-tokens -> 04-controls-theme (Chromium-88, Sharp 0px UI)
 │   ├── js/
-│   │   ├── app.js             # نقطة الدخول وربط المكونات
-│   │   ├── bridge.js          # الجسر الآمن بين المتصفح و ExtendScript
-│   │   └── modules/           # وحدات معالجة البيانات والبطاقات والحالة
-│   └── index.html             # واجهة اللوحة الرئيسية
-├── host/                      # محرك توليد الطبقات في After Effects
-│   ├── bootstrap.jsx          # محرك ExtendScript التنفيذي
-│   ├── api.jsxinc             # دوال التحقق والعمليات الثانوية
-│   └── core/ & rig/           # خوارزميات الحسابات الفلكية والهندسية
-└── presets/                   # نماذج وقوالب جاهزة مدمجة
+│   │   ├── app.js                   # منسق التطبيق ودورة الحياة والاختصارات (Ctrl+Z/Y)
+│   │   ├── bridge.js                # الجسر الآمن بين المتصفح و ExtendScript
+│   │   ├── svg-shapes.js            # مكتبة الأشكال المتجهة ومحلل SVG
+│   │   └── modules/                 # state-store, host-bridge, card-*, global-controls, batch-importer, shapes-engine, timeline-hud, mogrt-export, ui-icons, ui-dialog, ui-color-picker
+│   ├── vendor/CSInterface.js
+│   └── index.html                   # واجهة اللوحة الرئيسية (320px .. 1200px)
+├── host/                            # محرك توليد الطبقات في After Effects (ES3-Safe)
+│   ├── src/                         # وحدات المضيف المقسمة (00-json-es3 .. 99-entry)
+│   └── bootstrap.jsx                # المحرك التنفيذي المجمّع مع مطابقة Match Names متعددة اللغات
+├── scripts/                         # build-host.js, lint-es3-host.js, run-tests.ps1, وأدوات التثبيت والتصحيح
+└── tests/                           # حزم الفحص الآلية للعميل والمضيف والمزامنة
+    ├── masar-bootstrap-harness.js
+    ├── masar-client-integration-harness.js
+    └── shapes-sync-harness.js
 ```
 
 ---

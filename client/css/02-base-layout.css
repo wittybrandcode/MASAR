@@ -1,0 +1,1275 @@
+/* ============================================================================
+
+   MASAR PRO — 02-base-layout.css (Base, Layout, Header, Tabs, HUD, Footer)
+
+   Chromium 88 Compatible Cascade Layer — No @layer / :has() / Nesting
+
+   ============================================================================ */
+
+input[type="checkbox"], input[type="radio"] {
+    accent-color: #10b981;
+    cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════
+   BASE RESET & TYPOGRAPHY
+   ═══════════════════════════════════════════ */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════════
+   MANDATORY DARK STYLING FOR ALL INPUTS
+   ═══════════════════════════════════════════ */
+input[type="text"],
+input[type="number"],
+input.node-input-title,
+input.node-input-num,
+input.node-input-desc,
+input.ti,
+input.ni,
+textarea,
+select {
+    background-color: #141414;
+    background: #141414;
+    border: 1px solid #383838;
+    border-radius: 0px;
+    color: #e5e5e5;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-appearance: none;
+}
+
+input.node-input-num {
+    width: 46px;
+    text-align: center;
+    font-weight: 700;
+    color: #10b981;
+    background: #161616;
+    border: 1px solid #333333;
+    height: 24px;
+}
+
+input.node-input-title {
+    flex: 1;
+    font-weight: 600;
+    color: #ffffff;
+    background: #141414;
+    border: 1px solid #333333;
+    padding: 3px 8px;
+    height: 24px;
+}
+
+input.node-input-desc {
+    flex: 1;
+    background: #111111;
+    border: 1px solid #282828;
+    color: #a0a0a0;
+    font-size: 10px;
+    padding: 3px 8px;
+    height: 22px;
+}
+
+input.node-input-title:focus,
+input.node-input-num:focus,
+input.node-input-desc:focus,
+input.ti:focus,
+input.ni:focus,
+textarea:focus,
+select:focus {
+    border-color: #10b981;
+    background-color: #1a1a1a;
+    background: #1a1a1a;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-base);
+    color: var(--t1);
+    font-family: var(--font-ui);
+    font-size: 11px;
+    line-height: 1.4;
+    user-select: none;
+    -webkit-user-select: none;
+    font-feature-settings: "locl" 0;
+    font-variant-numeric: tabular-nums;
+}
+
+input, button, select, textarea {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    outline: none;
+    font-feature-settings: "locl" 0;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--bg-4);  }
+::-webkit-scrollbar-thumb:hover { background: var(--border-h); }
+
+/* Layout Shell */
+#app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    min-width: 260px;
+    position: relative;
+    background: var(--bg-base);
+}
+
+/* ═══════════════════════════════════════════
+   HEADER (Spectrum Style)
+   ═══════════════════════════════════════════ */
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 12px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    height: 38px;
+    flex-shrink: 0;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.logo {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    background: linear-gradient(135deg, var(--accent), #34d399);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.ver {
+    
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--t3);
+    padding: 2px 6px;
+    background: var(--bg-3);
+    
+    border: 1px solid var(--border);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Comp Telemetry Badge */
+.comp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    
+    padding: 3px 8px;
+    font-size: 10px;
+    color: var(--t2);
+    cursor: pointer;
+    transition: all var(--tr-fast);
+}
+
+.comp-badge:hover {
+    background: var(--bg-3);
+    border-color: var(--border-h);
+    color: var(--t1);
+}
+
+.comp-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 0px;
+    background: var(--pos);
+    box-shadow: 0 0 6px rgba(45, 157, 120, 0.6);
+}
+
+.comp-badge.nohost .comp-dot {
+    background: var(--warn);
+    box-shadow: 0 0 6px rgba(230, 134, 25, 0.6);
+}
+
+/* ═══════════════════════════════════════════
+   TABS (TEXTORO Spectrum Strip)
+   ═══════════════════════════════════════════ */
+.tabs {
+    position: sticky;
+    top: 38px;
+    z-index: 99;
+    display: flex;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+
+.tab {
+    flex: 1;
+    padding: 8px 10px 8px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--t2);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--tr-fast);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    white-space: nowrap;
+    
+}
+
+.tab i {
+    font-size: 13px;
+    line-height: 1;
+    transition: color var(--tr-fast);
+}
+
+.tab:hover {
+    color: var(--t1);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: rgba(16, 185, 129, 0.06);
+}
+
+.tab:focus-visible {
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.tab-badge {
+    
+    font-size: 8px;
+    padding: 1px 4px;
+    
+    background: var(--accent);
+    color: #fff;
+    margin-right: 4px;
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════
+   MAIN CONTENT & PANELS
+   ═══════════════════════════════════════════ */
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 10px 16px 10px;
+    background: var(--bg-base);
+}
+
+.panel {
+    display: none;
+    animation: sp-fade-in 150ms ease;
+}
+
+.panel.active {
+    display: block;
+}
+
+@keyframes sp-fade-in {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ═══════════════════════════════════════════
+   ACTION BAR (TEXTORO Fixed Footer)
+   ═══════════════════════════════════════════ */
+.action-bar {
+    position: relative;
+    flex-shrink: 0;
+    width: 100%;
+    background: var(--bg-2);
+    border-top: 1px solid var(--border);
+    padding: 7px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    z-index: 100;
+    height: 44px;
+    box-sizing: border-box;
+}
+
+.action-bar .status {
+    flex: 1;
+    font-size: 10px;
+    color: var(--t2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 0px;
+    background: var(--pos);
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(45, 157, 120, 0.6);
+}
+
+.action-bar .actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* Action Buttons (.ab, .ab-p) */
+.ab {
+    width: 32px;
+    height: 32px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    
+    color: var(--t1);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--tr-fast);
+    font-size: 13px;
+}
+
+.ab:hover {
+    background: var(--bg-4);
+    border-color: var(--border-h);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.ab:active {
+    transform: translateY(0);
+}
+
+.ab-p {
+    width: auto;
+    padding: 0 14px;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 11px;
+    gap: 6px;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+}
+
+.ab-p:hover {
+    background: var(--accent-h);
+    border-color: var(--accent-h);
+    box-shadow: 0 3px 8px rgba(16, 185, 129, 0.5);
+}
+
+.live-pill {
+    
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    
+    padding: 3px 9px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--t2);
+    cursor: pointer;
+    transition: all var(--tr-fast);
+    height: 28px;
+}
+
+.live-pill.active {
+    background: rgba(45, 157, 120, 0.12);
+    border-color: var(--pos);
+    color: var(--pos);
+}
+
+.live-pill .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 0px;
+    background: var(--t3);
+    transition: background var(--tr-fast);
+}
+
+.live-pill.active .live-dot {
+    background: var(--pos);
+    box-shadow: 0 0 5px rgba(45, 157, 120, 0.8);
+    animation: live-pulse 2s infinite;
+}
+
+@keyframes live-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+
+/* ═══════════════════════════════════════════
+   PRECISION DUAL-AXIS HUD FRAMEWORK (SKETCH-BASED ARCHITECTURE)
+   ═══════════════════════════════════════════ */
+.hud-framework {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 1. Top Horizontal HUD Strip */
+.hud-horizontal-strip {
+    background: #0d0d0d;
+    border-bottom: 1px solid var(--border);
+    height: 38px;
+    min-height: 38px;
+    max-height: 38px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+#timeline-hud-canvas {
+    width: 100%;
+    height: 38px;
+    display: block;
+}
+
+/* 2. Viewport Row (Rail on Right in RTL, Content on Left) */
+.hud-viewport-row {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 3. Right Vertical Rail */
+.hud-vertical-rail {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    background: #0d0d0d;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+/* Corner Junction Button (Matches Red Dot in user's sketch) */
+.hud-corner-btn {
+    width: 44px;
+    height: 38px;
+    min-height: 38px;
+    background: #181818;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    position: relative;
+    padding: 0;
+    
+    transition: all var(--tr-fast);
+}
+
+.hud-corner-btn:hover {
+    background: #222222;
+    color: #ffffff;
+}
+
+.hud-corner-dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 7px;
+    height: 7px;
+    border-radius: 0px;
+    background: #ef4444; /* Matches red circle in user sketch! */
+    box-shadow: 0 0 6px #ef4444;
+}
+
+.hud-vertical-canvas-wrap {
+    flex: 1;
+    width: 44px;
+    position: relative;
+    overflow: hidden;
+}
+
+#timeline-hud-vertical-canvas {
+    width: 44px;
+    height: 100%;
+    display: block;
+}
+
+/* 4. Floating Micro Tooltip */
+.hud-floating-tooltip {
+    position: fixed;
+    z-index: 99999;
+    background: #141414;
+    border: 1px solid #383838;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    pointer-events: none;
+    
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85);
+}
+
+/* Node card highlight pulse when jumped from HUD */
+@keyframes node-pulse-glow {
+    0% { outline: 2px solid #10b981; background-color: rgba(16, 185, 129, 0.25); }
+    100% { outline: 2px solid transparent; background-color: transparent; }
+}
+
+.node-card--highlight {
+    animation: node-pulse-glow 1.2s ease-out;
+}
+
+/* 2. Curated Motion Palettes Strip */
+.palette-strip-box {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    
+    padding: 6px 10px;
+    margin-bottom: 8px;
+}
+
+.palette-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+}
+
+.palette-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all var(--tr-fast);
+}
+
+.palette-btn:hover {
+    background: var(--bg-3);
+    border-color: var(--accent);
+}
+
+.pal-dot {
+    width: 7px;
+    height: 7px;
+    
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.pal-name {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--t1);
+}
+
+/* 3. Parameter Scrubbing (Draggable Labels) */
+.scrubbable {
+    cursor: ew-resize;
+    user-select: none;
+    transition: color var(--tr-fast);
+}
+
+.scrubbable:hover {
+    color: var(--accent);
+    text-shadow: 0 0 4px rgba(16, 185, 129, 0.4);
+}
+
+
+
+/* 4. Drag & Drop Reordering for Node Cards */
+.node-card {
+    transition: transform 120ms ease, opacity 120ms ease, border-color 120ms ease;
+}
+
+.node-card.is-dragging {
+    opacity: 0.45;
+    background: var(--bg-base);
+    border: 1px dashed var(--accent);
+}
+
+.node-card.drag-over-top {
+    border-top: 2px solid var(--accent);
+}
+
+.node-card.drag-over-bottom {
+    border-bottom: 2px solid var(--accent);
+}
+
+.node-drag-handle {
+    cursor: grab;
+    color: var(--t3);
+    font-size: 11px;
+    padding: 0 3px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.node-drag-handle:active {
+    cursor: grabbing;
+}
+
+
+input[type="checkbox"], input[type="radio"] {
+    accent-color: #10b981;
+    cursor: pointer;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    
+}
+
+body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-size: 12px;
+    direction: rtl;
+    text-align: right;
+    overflow-x: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Universal Icon Centering (Zero Baseline Drop) */
+button i.fa-solid,
+button i.fa-regular,
+button i.fa-brands,
+span i.fa-solid,
+span i.fa-regular,
+div i.fa-solid,
+div i.fa-regular {
+    vertical-align: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    margin: 0;
+}
+
+/* Prototype Banner */
+.prototype-badge-bar {
+    background: linear-gradient(90deg, #064e3b, #10b981);
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.prototype-badge-bar .tag {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1px 6px;
+    font-size: 9.5px;
+    font-weight: 800;
+}
+
+/* Top App Bar */
+.app-header {
+    background: #0d0d10;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.app-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.app-logo {
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+}
+
+.app-logo span {
+    color: var(--accent-light);
+}
+
+.comp-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: #15151c;
+    padding: 2px 7px;
+    border: 1px solid var(--border-subtle);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.comp-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 0px;
+    background: var(--success);
+    box-shadow: 0 0 5px var(--success);
+}
+
+/* Master Navigation Tabs */
+.main-nav {
+    display: flex;
+    background: #111116;
+    border-bottom: 1px solid var(--border-card);
+}
+
+.nav-tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.nav-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.nav-tab.active {
+    color: var(--text-primary);
+    background: #16161f;
+    border-bottom-color: var(--accent);
+}
+
+.nav-tab-badge {
+    background: var(--accent);
+    color: #052e16;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 1px 6px;
+    line-height: 1.2;
+}
+
+/* =============================================================================
+   DUAL-AXIS TIMELINE HUD FRAMEWORK (Top Strip + Side Rail)
+   ========================================================================== */
+
+/* 1. Top Horizontal HUD Strip */
+.hud-horizontal-strip {
+    background: #0d0d11;
+    border-bottom: 1px solid var(--border-subtle);
+    height: 38px;
+    min-height: 38px;
+    max-height: 38px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    transition: height 0.16s ease, opacity 0.16s ease;
+}
+
+.hud-horizontal-strip.is-vertical {
+    height: 0;
+    min-height: 0;
+    max-height: 0;
+    border-bottom-width: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.subbar-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.subbar-sep {
+    width: 1px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0 2px;
+}
+
+#timeline-hud-canvas {
+    width: 100%;
+    height: 38px;
+    display: block;
+}
+
+/* 2. Main Viewport Row (Vertical Rail on Right in RTL, Content on Left) */
+.hud-viewport-row {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 3. Right Vertical Rail */
+.hud-vertical-rail {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    background: #0f0f14;
+    border-left: 1px solid var(--border-card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.hud-vertical-canvas-wrap {
+    flex: 1;
+    width: 44px;
+    position: relative;
+    overflow: hidden;
+}
+
+#timeline-hud-vertical-canvas {
+    width: 44px;
+    height: 100%;
+    display: block;
+}
+
+/* =============================================================================
+   SUB-TOOLBAR (Pure Icon Tools + Orientation Corner Switch)
+   ========================================================================== */
+.sub-toolbar {
+    padding: 5px 10px;
+    background: #111116;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Generic Tool Button (Icon-Only Architecture — Subdued Chrome) */
+.btn-tool {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #141418;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-dim);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    padding: 0;
+}
+
+.btn-tool:hover {
+    background: #1f1f28;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-tool:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn-tool--header {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 0px;
+}
+
+.btn-tool--primary {
+    background: var(--accent);
+    border-color: var(--accent-light);
+    color: #052e16;
+}
+
+.btn-tool--primary:hover {
+    background: var(--accent-hover);
+    color: #ffffff;
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.btn-tool.active {
+    background: var(--accent);
+    border-color: var(--accent-light);
+    color: #052e16;
+}
+
+/* Corner Orientation Switcher */
+#btn-hud-corner {
+    width: 32px;
+    height: 26px;
+    min-width: 32px;
+    background: #141418;
+    border: 1px solid var(--border-subtle);
+    color: var(--accent-light);
+    position: relative;
+}
+
+#btn-hud-corner:hover {
+    background: #1f1f28;
+    color: #ffffff;
+    border-color: var(--accent-light);
+}
+
+.hud-corner-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 0px;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+}
+
+/* Pattern Action Chips (Icon-Only & Subdued) */
+.pattern-chips-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.btn-pattern-icon {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #121216;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-dim);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    padding: 0;
+}
+
+.btn-pattern-icon:hover {
+    background: #1e1e26;
+    color: var(--text-secondary);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+
+/* =============================================================================
+   ACTION BAR & BOTTOM BUTTONS (Ultra-Clean Icon-Only Trio)
+   ========================================================================== */
+#footer-bar.action-bar {
+    background: #0d0d12;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    height: 42px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#footer-bar .actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* Base Action Button Style for All Trio */
+#footer-bar .actions .ab {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    max-width: 32px;
+    padding: 0;
+    border-radius: 0px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #181820;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    cursor: pointer;
+    font-size: 14px;
+    position: relative;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+#footer-bar .actions .ab i {
+    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+#footer-bar .actions .ab:hover {
+    background: #242430;
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+#footer-bar .actions .ab:active {
+    transform: translateY(0);
+}
+
+/* Primary Action Button (Generate / Update ⚡) */
+#footer-bar .actions .ab-p {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+
+#footer-bar .actions .ab-p:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-light);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.6);
+}
+
+#footer-bar .actions .ab-p:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Rebuild Button (🔄) */
+#btn-rebuild i {
+    transition: transform 0.3s ease;
+}
+
+#btn-rebuild:hover i {
+    transform: rotate(-90deg);
+}
+
+/* Live Sync Pill Button (📡) */
+#footer-bar .actions .live-pill {
+    background: #181820;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #64748b;
+}
+
+#footer-bar .actions .live-pill.active {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+#footer-bar .actions .live-pill .live-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 0px;
+    background: #64748b;
+    transition: all 0.2s ease;
+}
+
+#footer-bar .actions .live-pill.active .live-dot {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+    animation: live-pulse 2s infinite ease-in-out;
+}
+
+/* Live Sync Pill (Icon-Only!) */
+.live-pill {
+    height: 26px;
+    width: 26px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #15151c;
+    border: 1px solid var(--border-card);
+    color: var(--text-dim);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.12s ease;
+}
+
+.live-pill.active {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.live-pill .live-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 5px;
+    height: 5px;
+    border-radius: 0px;
+    background: var(--success);
+    box-shadow: 0 0 5px var(--success);
+}
+
+
+/* Canvas Timeline HUD Tooltip & Cursors */
+.canvas-hud-tooltip {
+    position: fixed;
+    z-index: 1000;
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 0px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    white-space: nowrap;
+}
+.canvas-hud-tooltip .tooltip-accent {
+    color: var(--accent, #10b981);
+    font-weight: 700;
+}
+
+
+
+
+
+/* Lightweight SVG Icon Alignment & Spin (Replaces FontAwesome CSS) */
+i.fa-solid,
+i.fa-regular,
+i.fa-brands {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.ms-fa-svg {
+    width: 1em;
+    height: 1em;
+    display: block;
+    fill: currentColor;
+}
+
+.fa-spin {
+    animation: ms-fa-spin 1s linear infinite;
+}
+
+@keyframes ms-fa-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* State Utilities (Only intentional !important overrides across entire CSS) */
+.u-hidden {
+    display: none !important;
+}
+
+.u-visible-flex {
+    display: flex !important;
+}
+
+.is-scrubbing {
+    cursor: ew-resize !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+.canvas-cursor-pointer {
+    cursor: pointer !important;
+}
+
+.canvas-cursor-default {
+    cursor: default !important;
+}
+

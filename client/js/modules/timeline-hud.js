@@ -26,7 +26,7 @@ var TIME_RULER_TIMELINE_HUD = (function () {
         state.selectedNodeIndex = index;
 
         if (typeof TIME_RULER_STATE_STORE !== 'undefined') {
-            TIME_RULER_STATE_STORE.saveState(state);
+            TIME_RULER_STATE_STORE.saveState(state, false, { skipHistory: true });
         }
 
         renderHorizontalHUD(state);
@@ -35,26 +35,64 @@ var TIME_RULER_TIMELINE_HUD = (function () {
         var cards = document.querySelectorAll('.node-card');
         for (var c = 0; c < cards.length; c++) {
             if (c === index) {
-                cards[c].classList.add('node-card--selected');
+                cards[c].classList.add('node-card--selected', 'selected');
             } else {
-                cards[c].classList.remove('node-card--selected');
+                cards[c].classList.remove('node-card--selected', 'selected');
             }
         }
 
         if (typeof onSelect === 'function') onSelect(index);
     }
 
+    function computeHudEffectiveLength(state, count) {
+        if (state.spacingMode === 'fixed') {
+            var em = (typeof state.endMargin === 'number') ? state.endMargin : 60;
+            var gap = (typeof state.spacingGap === 'number' && state.spacingGap > 0) ? state.spacingGap : 250;
+            return Math.max(100, (2 * em) + Math.max(0, count - 1) * gap);
+        }
+        return Math.max(1, (typeof state.length === 'number' && state.length > 0) ? state.length : 1500);
+    }
+
+    function resolveHudLabel(node, index) {
+        if (node && node.sources && node.sources.center) {
+            var cs = node.sources.center;
+            if (cs.type === 'none') return '·';
+            if ((cs.type === 'icon' || cs.type === 'shape_icon') && (cs.icon || cs.value)) {
+                return String(cs.icon || cs.value).slice(0, 2);
+            }
+            if (cs.value !== undefined && cs.value !== null && String(cs.value).trim() !== '') {
+                var raw = String(cs.value).trim();
+                return raw.length > 4 ? raw.slice(0, 4) : raw;
+            }
+        }
+        if (node && node.number !== undefined && node.number !== null && String(node.number).trim() !== '') {
+            return String(node.number).trim().slice(0, 4);
+        }
+        return String(index + 1);
+    }
+
     function renderHorizontalHUD(state) {
+        var isH = (state.orientation === 'horizontal');
+        var strip = $('hud-horizontal-strip');
+        if (strip && strip.classList) {
+            strip.classList.toggle('is-vertical', !isH);
+        }
+
         var canvas = $('timeline-hud-canvas');
         if (!canvas) return;
         var ctx = canvas.getContext('2d');
         if (!ctx) return;
 
+        if (!isH) {
+            hudHorizontalHits = [];
+            return;
+        }
+
         var dpr = window.devicePixelRatio || 1;
         if (dpr < 1) dpr = 1;
 
         var parentW = canvas.parentElement ? canvas.parentElement.clientWidth : 400;
-        var cssW = parentW;
+        var cssW = Math.max(120, parentW);
         var cssH = 38;
 
         canvas.style.width = cssW + 'px';
@@ -68,14 +106,13 @@ var TIME_RULER_TIMELINE_HUD = (function () {
         ctx.clearRect(0, 0, cssW, cssH);
         hudHorizontalHits = [];
 
-        var isH = (state.orientation === 'horizontal');
         var pad = 52;
         var lineY = 19;
 
         if (isH) {
-            ctx.strokeStyle = '#ffffff';
+            ctx.strokeStyle = state.lineColor || '#ffffff';
             ctx.lineWidth = 2.5;
-            ctx.lineCap = (state.lineCap === 'round') ? 'round' : 'butt';
+            ctx.lineCap = (state.lineCap === 'round') ? 'round' : ((state.lineCap === 'projecting') ? 'square' : 'butt');
 
             if (state.lineStyle === 'dashed') {
                 ctx.setLineDash([7, 4]);
@@ -91,7 +128,7 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             ctx.stroke();
             ctx.setLineDash([]);
 
-            var termCol = state.terminalColor || '#ffffff';
+            var termCol = state.terminalColor || state.lineColor || '#ffffff';
             if (state.startTerminal === 'dot') {
                 ctx.fillStyle = termCol;
                 ctx.beginPath();
@@ -105,6 +142,13 @@ var TIME_RULER_TIMELINE_HUD = (function () {
                 ctx.lineTo(pad - 8, lineY + 5);
                 ctx.closePath();
                 ctx.fill();
+            } else if (state.startTerminal === 'bar') {
+                ctx.strokeStyle = termCol;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(pad - 6, lineY - 6);
+                ctx.lineTo(pad - 6, lineY + 6);
+                ctx.stroke();
             }
 
             if (state.endTerminal === 'dot') {
@@ -120,10 +164,18 @@ var TIME_RULER_TIMELINE_HUD = (function () {
                 ctx.lineTo(cssW - pad + 8, lineY + 5);
                 ctx.closePath();
                 ctx.fill();
+            } else if (state.endTerminal === 'bar') {
+                ctx.strokeStyle = termCol;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(cssW - pad + 6, lineY - 6);
+                ctx.lineTo(cssW - pad + 6, lineY + 6);
+                ctx.stroke();
             }
 
             var count = state.nodes.length;
-            var hudMargin = (state.length > 0 && typeof state.endMargin === 'number') ? Math.min((cssW - 2 * pad) * 0.4, Math.round((state.endMargin / state.length) * (cssW - 2 * pad))) : 0;
+            var effLen = computeHudEffectiveLength(state, count);
+            var hudMargin = (typeof state.endMargin === 'number') ? Math.min((cssW - 2 * pad) * 0.4, Math.round((state.endMargin / effLen) * (cssW - 2 * pad))) : 0;
             var startX = pad + hudMargin;
             var endX = cssW - pad - hudMargin;
             var span = Math.max(0, endX - startX);
@@ -138,10 +190,10 @@ var TIME_RULER_TIMELINE_HUD = (function () {
                 var isSel = (i === (state.selectedNodeIndex || 0));
 
                 ctx.save();
-                var nNum = String(i + 1);
+                var nNum = resolveHudLabel(node, i);
 
                 if (isSel) {
-                    var selColor = (node.customColor && node.customColor !== 'inherit') ? node.customColor : '#10b981';
+                    var selColor = (node.customColor && node.customColor !== 'inherit') ? node.customColor : (state.circleFill || '#10b981');
                     var selSize = 26;
                     var selHalf = 13;
 
@@ -153,18 +205,18 @@ var TIME_RULER_TIMELINE_HUD = (function () {
                     ctx.strokeRect(x - selHalf + 0.75, y - selHalf + 0.75, selSize - 1.5, selSize - 1.5);
 
                     ctx.fillStyle = '#ffffff';
-                    ctx.font = '900 13px "Cairo", "Segoe UI", "Consolas", sans-serif';
+                    ctx.font = '900 12px "Cairo", "Segoe UI", "Consolas", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(nNum, x, y + 0.5);
 
                     hudHorizontalHits.push({ index: i, x: x, y: y, r: selHalf + 2, node: node });
                 } else {
-                    ctx.fillStyle = '#ffffff';
+                    ctx.fillStyle = (node.customColor && node.customColor !== 'inherit') ? node.customColor : '#ffffff';
                     ctx.fillRect(x - half, y - half, nodeSize, nodeSize);
 
                     ctx.fillStyle = '#000000';
-                    ctx.font = '800 13px "Cairo", "Segoe UI", "Consolas", sans-serif';
+                    ctx.font = '800 12px "Cairo", "Segoe UI", "Consolas", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(nNum, x, y + 0.5);
@@ -179,7 +231,7 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'middle';
-            ctx.fillText((state.length || 1800) + 'px', 4, lineY);
+            ctx.fillText(Math.round(effLen) + 'px', 4, lineY);
             ctx.restore();
 
         } else {
@@ -230,9 +282,9 @@ var TIME_RULER_TIMELINE_HUD = (function () {
         var lineX = 22;
 
         if (isV) {
-            ctx.strokeStyle = '#ffffff';
+            ctx.strokeStyle = state.lineColor || '#ffffff';
             ctx.lineWidth = 2.5;
-            ctx.lineCap = (state.lineCap === 'round') ? 'round' : 'butt';
+            ctx.lineCap = (state.lineCap === 'round') ? 'round' : ((state.lineCap === 'projecting') ? 'square' : 'butt');
 
             if (state.lineStyle === 'dashed') {
                 ctx.setLineDash([7, 4]);
@@ -248,7 +300,7 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             ctx.stroke();
             ctx.setLineDash([]);
 
-            var termColY = state.terminalColor || '#ffffff';
+            var termColY = state.terminalColor || state.lineColor || '#ffffff';
             if (state.startTerminal === 'dot') {
                 ctx.fillStyle = termColY;
                 ctx.beginPath();
@@ -262,6 +314,13 @@ var TIME_RULER_TIMELINE_HUD = (function () {
                 ctx.lineTo(lineX + 5, padY - 8);
                 ctx.closePath();
                 ctx.fill();
+            } else if (state.startTerminal === 'bar') {
+                ctx.strokeStyle = termColY;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(lineX - 6, padY - 6);
+                ctx.lineTo(lineX + 6, padY - 6);
+                ctx.stroke();
             }
 
             if (state.endTerminal === 'dot') {
@@ -277,10 +336,18 @@ var TIME_RULER_TIMELINE_HUD = (function () {
                 ctx.lineTo(lineX + 5, cssH - padY + 8);
                 ctx.closePath();
                 ctx.fill();
+            } else if (state.endTerminal === 'bar') {
+                ctx.strokeStyle = termColY;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(lineX - 6, cssH - padY + 6);
+                ctx.lineTo(lineX + 6, cssH - padY + 6);
+                ctx.stroke();
             }
 
             var count = state.nodes.length;
-            var hudMarginY = (state.length > 0 && typeof state.endMargin === 'number') ? Math.min((cssH - 2 * padY) * 0.4, Math.round((state.endMargin / state.length) * (cssH - 2 * padY))) : 0;
+            var effLenY = computeHudEffectiveLength(state, count);
+            var hudMarginY = (typeof state.endMargin === 'number') ? Math.min((cssH - 2 * padY) * 0.4, Math.round((state.endMargin / effLenY) * (cssH - 2 * padY))) : 0;
             var startY = padY + hudMarginY;
             var endY = cssH - padY - hudMarginY;
             var span = Math.max(0, endY - startY);
@@ -295,10 +362,10 @@ var TIME_RULER_TIMELINE_HUD = (function () {
                 var isSel = (i === (state.selectedNodeIndex || 0));
 
                 ctx.save();
-                var nNum = String(i + 1);
+                var nNum = resolveHudLabel(node, i);
 
                 if (isSel) {
-                    var selColor = (node.customColor && node.customColor !== 'inherit') ? node.customColor : '#10b981';
+                    var selColor = (node.customColor && node.customColor !== 'inherit') ? node.customColor : (state.circleFill || '#10b981');
                     var selSize = 26;
                     var selHalf = 13;
 
@@ -310,18 +377,18 @@ var TIME_RULER_TIMELINE_HUD = (function () {
                     ctx.strokeRect(x - selHalf + 0.75, y - selHalf + 0.75, selSize - 1.5, selSize - 1.5);
 
                     ctx.fillStyle = '#ffffff';
-                    ctx.font = '900 13px "Cairo", "Segoe UI", "Consolas", sans-serif';
+                    ctx.font = '900 12px "Cairo", "Segoe UI", "Consolas", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(nNum, x, y + 0.5);
 
                     hudVerticalHits.push({ index: i, x: x, y: y, r: selHalf + 2, node: node });
                 } else {
-                    ctx.fillStyle = '#ffffff';
+                    ctx.fillStyle = (node.customColor && node.customColor !== 'inherit') ? node.customColor : '#ffffff';
                     ctx.fillRect(x - half, y - half, nodeSize, nodeSize);
 
                     ctx.fillStyle = '#000000';
-                    ctx.font = '800 13px "Cairo", "Segoe UI", "Consolas", sans-serif';
+                    ctx.font = '800 12px "Cairo", "Segoe UI", "Consolas", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(nNum, x, y + 0.5);
@@ -336,7 +403,7 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
-            ctx.fillText((state.length || 1800) + 'p', lineX, cssH - 2);
+            ctx.fillText(Math.round(effLenY) + 'p', lineX, cssH - 2);
             ctx.restore();
 
         } else {
@@ -373,16 +440,25 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             cornerBtn.addEventListener('click', function () {
                 var newOri = (state.orientation === 'horizontal') ? 'vertical' : 'horizontal';
                 state.orientation = newOri;
-
-                if (typeof TIME_RULER_STATE_STORE !== 'undefined') {
-                    TIME_RULER_STATE_STORE.saveState(state);
+                if (newOri === 'horizontal' && (state.contentSide === 'left' || state.contentSide === 'right')) {
+                    state.contentSide = (state.contentSide === 'left') ? 'top' : 'bottom';
+                } else if (newOri === 'vertical' && (state.contentSide === 'top' || state.contentSide === 'bottom')) {
+                    state.contentSide = (state.contentSide === 'top') ? 'left' : 'right';
                 }
 
-                var segOri = $('seg-orientation');
-                if (segOri) {
-                    segOri.querySelectorAll('button[data-orientation]').forEach(function (btn) {
-                        btn.classList.toggle('active', btn.dataset.orientation === newOri);
-                    });
+                if (typeof TIME_RULER_STATE_STORE !== 'undefined') {
+                    TIME_RULER_STATE_STORE.saveState(state, false, { label: 'تغيير اتجاه المسار', coalesceMs: 0 });
+                }
+
+                if (typeof TIME_RULER_GLOBAL_CONTROLS !== 'undefined' && TIME_RULER_GLOBAL_CONTROLS.syncFormValues) {
+                    TIME_RULER_GLOBAL_CONTROLS.syncFormValues(state);
+                } else {
+                    var segOri = $('seg-orientation');
+                    if (segOri) {
+                        segOri.querySelectorAll('button[data-orientation]').forEach(function (btn) {
+                            btn.classList.toggle('active', btn.dataset.orientation === newOri);
+                        });
+                    }
                 }
 
                 updateCornerButton(state);
@@ -416,22 +492,41 @@ var TIME_RULER_TIMELINE_HUD = (function () {
 
                 if (hovered && tooltip) {
                     canvas.className = 'canvas-cursor-pointer';
-                    var nTitle = hovered.node.title || 'عقدة زمنية';
-                    var rawN = hovered.node.number ? String(hovered.node.number).trim() : String(hovered.index + 1);
+                    var nTitle = (hovered.node.sources && hovered.node.sources.front && hovered.node.sources.front.title)
+                        || hovered.node.title || 'عقدة زمنية';
+                    var rawN = resolveHudLabel(hovered.node, hovered.index);
                     var nNum = rawN.replace(/^0+/, '') || String(hovered.index + 1);
-                    tooltip.innerHTML = '<span class="tooltip-accent">#' + nNum + '</span> ' + nTitle;
+                    tooltip.textContent = '';
+                    var accSpan = document.createElement('span');
+                    accSpan.className = 'tooltip-accent';
+                    accSpan.textContent = '#' + nNum;
+                    tooltip.appendChild(accSpan);
+                    tooltip.appendChild(document.createTextNode(' ' + nTitle));
                     tooltip.classList.remove('u-hidden');
-                    tooltip.style.left = (e.clientX + 10) + 'px';
-                    tooltip.style.top = (e.clientY - 26) + 'px';
+                    tooltip.style.display = 'block';
+                    var tipW = tooltip.offsetWidth || 120;
+                    var tipH = tooltip.offsetHeight || 24;
+                    var winW = window.innerWidth || 400;
+                    var winH = window.innerHeight || 600;
+                    var leftPos = Math.max(8, Math.min(winW - tipW - 8, e.clientX - tipW - 10 >= 8 && canvas === canvasV ? (e.clientX - tipW - 10) : (e.clientX + 10)));
+                    var topPos = Math.max(8, Math.min(winH - tipH - 8, e.clientY - 26));
+                    tooltip.style.left = leftPos + 'px';
+                    tooltip.style.top = topPos + 'px';
                 } else {
                     canvas.className = 'canvas-cursor-default';
-                    if (tooltip) tooltip.classList.add('u-hidden');
+                    if (tooltip) {
+                        tooltip.classList.add('u-hidden');
+                        tooltip.style.display = 'none';
+                    }
                 }
             });
 
             canvas.addEventListener('pointerleave', function () {
                 canvas.className = 'canvas-cursor-default';
-                if (tooltip) tooltip.classList.add('u-hidden');
+                if (tooltip) {
+                    tooltip.classList.add('u-hidden');
+                    tooltip.style.display = 'none';
+                }
             });
 
             canvas.addEventListener('click', function (e) {
@@ -464,6 +559,17 @@ var TIME_RULER_TIMELINE_HUD = (function () {
 
         setupCanvasInteractive(canvasH, function () { return hudHorizontalHits; });
         setupCanvasInteractive(canvasV, function () { return hudVerticalHits; });
+
+        if (typeof ResizeObserver !== 'undefined') {
+            var ro = new ResizeObserver(function () {
+                renderTimelineHUD(state);
+            });
+            if (canvasH && canvasH.parentElement) ro.observe(canvasH.parentElement);
+            if (canvasV && canvasV.parentElement) ro.observe(canvasV.parentElement);
+        }
+        if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(function () { renderTimelineHUD(state); });
+        }
     }
 
     function makeScrubbable(labelEl, rangeId, numId, propKey, isFloat, state, onScrub, onEnd) {
@@ -476,6 +582,13 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             var startX = e.clientX;
             var startVal = isFloat ? parseFloat(state[propKey]) : parseInt(state[propKey], 10);
             if (isNaN(startVal)) startVal = 0;
+
+            var numEl = $(numId);
+            var rngEl = $(rangeId);
+            var rawMin = (numEl && numEl.min !== '') ? parseFloat(numEl.min) : ((rngEl && rngEl.min !== '') ? parseFloat(rngEl.min) : -Infinity);
+            var rawMax = (numEl && numEl.max !== '') ? parseFloat(numEl.max) : ((rngEl && rngEl.max !== '') ? parseFloat(rngEl.max) : Infinity);
+            var minLimit = (!isNaN(rawMin)) ? rawMin : ((propKey === 'topOffset' || propKey === 'bottomOffset') ? -150 : 0);
+            var maxLimit = (!isNaN(rawMax)) ? rawMax : Infinity;
 
             document.body.classList.add('is-scrubbing');
             if (typeof TIME_RULER_BRIDGE !== 'undefined') {
@@ -490,11 +603,14 @@ var TIME_RULER_TIMELINE_HUD = (function () {
 
                 var newVal = startVal + (dx * step);
                 if (!isFloat) newVal = Math.round(newVal);
-                if (newVal < 0 && (propKey !== 'topOffset' && propKey !== 'bottomOffset')) newVal = 0;
+                else newVal = Math.round(newVal * 10) / 10;
+
+                if (newVal < minLimit) newVal = minLimit;
+                if (newVal > maxLimit) newVal = maxLimit;
 
                 state[propKey] = newVal;
-                var rng = $(rangeId); if (rng) rng.value = newVal;
-                var num = $(numId); if (num) num.value = newVal;
+                if (rngEl) rngEl.value = newVal;
+                if (numEl) numEl.value = newVal;
 
                 renderTimelineHUD(state);
                 if (typeof onScrub === 'function') onScrub(propKey, newVal);
@@ -503,18 +619,22 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             function onUp() {
                 window.removeEventListener('pointermove', onMove);
                 window.removeEventListener('pointerup', onUp);
+                window.removeEventListener('pointercancel', onUp);
+                window.removeEventListener('blur', onUp);
                 document.body.classList.remove('is-scrubbing');
                 if (typeof TIME_RULER_BRIDGE !== 'undefined') {
                     TIME_RULER_BRIDGE.callHost('endUndoSession');
                 }
                 if (typeof TIME_RULER_STATE_STORE !== 'undefined') {
-                    TIME_RULER_STATE_STORE.saveState(state);
+                    TIME_RULER_STATE_STORE.saveState(state, false, { label: 'تحريك ' + propKey, coalesceMs: 0 });
                 }
                 if (typeof onEnd === 'function') onEnd(propKey);
             }
 
             window.addEventListener('pointermove', onMove);
             window.addEventListener('pointerup', onUp);
+            window.addEventListener('pointercancel', onUp);
+            window.addEventListener('blur', onUp);
         });
     }
 
@@ -522,9 +642,11 @@ var TIME_RULER_TIMELINE_HUD = (function () {
         var scrubConfigs = [
             { cell: 'cell-length', rng: 'rng-length', num: 'inp-length', prop: 'length', float: false },
             { cell: 'cell-gap', rng: 'rng-gap', num: 'inp-gap', prop: 'spacingGap', float: false },
+            { cell: 'cell-end-margin', rng: 'rng-end-margin', num: 'inp-end-margin', prop: 'endMargin', float: false },
             { cell: 'cell-line-w', rng: 'rng-line-w', num: 'inp-line-w', prop: 'lineWidth', float: false },
             { cell: 'cell-dash-size', rng: 'rng-dash-size', num: 'inp-dash-size', prop: 'dashSize', float: false },
             { cell: 'cell-dash-gap', rng: 'rng-dash-gap', num: 'inp-dash-gap', prop: 'dashGap', float: false },
+            { cell: 'cell-terminal-size', rng: 'rng-terminal-size', num: 'inp-terminal-size', prop: 'terminalSize', float: false },
             { cell: 'cell-circ-r', rng: 'rng-circ-r', num: 'inp-circ-r', prop: 'circleRadius', float: false },
             { cell: 'cell-circ-sw', rng: 'rng-circ-sw', num: 'inp-circ-sw', prop: 'circleStrokeWidth', float: false },
             { cell: 'cell-tick-h', rng: 'rng-tick-h', num: 'inp-tick-h', prop: 'tickHeight', float: false },
@@ -533,15 +655,17 @@ var TIME_RULER_TIMELINE_HUD = (function () {
             { cell: 'cell-desc-size', rng: 'rng-desc-size', num: 'inp-desc-size', prop: 'descFontSize', float: true },
             { cell: 'cell-num-size', rng: 'rng-num-size', num: 'inp-num-size', prop: 'numberFontSize', float: false },
             { cell: 'cell-top-offset', rng: 'rng-top-offset', num: 'inp-top-offset', prop: 'topOffset', float: false },
-            { cell: 'cell-bot-offset', rng: 'rng-bot-offset', num: 'inp-bot-offset', prop: 'bottomOffset', float: false }
+            { cell: 'cell-bot-offset', rng: 'rng-bot-offset', num: 'inp-bot-offset', prop: 'bottomOffset', float: false },
+            { cell: 'cell-box-pad-h', rng: 'rng-box-pad-h', num: 'inp-box-pad-h', prop: 'boxPaddingH', float: false },
+            { cell: 'cell-box-pad-v', rng: 'rng-box-pad-v', num: 'inp-box-pad-v', prop: 'boxPaddingV', float: false }
         ];
 
         scrubConfigs.forEach(function (cfg) {
             var rngEl = $(cfg.rng);
             if (!rngEl) return;
-            var cEl = $(cfg.cell) || rngEl.closest('.field-cell');
+            var cEl = $(cfg.cell) || rngEl.closest('.prop-row, .field-cell');
             if (!cEl) return;
-            var lbl = cEl.querySelector('.field-label');
+            var lbl = cEl.querySelector('.prop-lbl, .field-label');
             if (lbl) makeScrubbable(lbl, cfg.rng, cfg.num, cfg.prop, cfg.float, state, onScrub, onEnd);
         });
     }

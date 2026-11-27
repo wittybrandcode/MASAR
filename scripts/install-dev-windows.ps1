@@ -1,4 +1,4 @@
-# TIME RULER - developer installer for Windows (unsigned panel)
+# MASAR PRO - developer installer for Windows (unsigned panel)
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File install-dev-windows.ps1              # install/refresh copy
 #   powershell -ExecutionPolicy Bypass -File install-dev-windows.ps1 -EnableDebug # also enable PlayerDebugMode
@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$dest        = Join-Path $env:APPDATA 'Adobe\CEP\extensions\TIME_RULER'
+$dest        = Join-Path $env:APPDATA 'Adobe\CEP\extensions\MASAR'
 
 if ($Uninstall) {
     if (Test-Path $dest) {
@@ -23,7 +23,7 @@ if ($Uninstall) {
 }
 
 # Copy the extension payload (manifest must sit directly in the extension folder)
-$items = @('CSXS', 'client', 'host', 'presets', 'README.md', 'CHANGELOG.md', 'LICENSES.md')
+$items = @('CSXS', 'client', 'host', 'README.md')
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 foreach ($item in $items) {
     $src = Join-Path $projectRoot $item
@@ -53,7 +53,7 @@ Write-Host ""
 Write-Host "Installed to: $dest"
 Write-Host "Next steps:"
 Write-Host "  1. Restart After Effects (fully quit and relaunch)."
-Write-Host "  2. Open the panel: Window > Extensions > TIME RULER."
+Write-Host "  2. Open the panel: Window > Extensions > MASAR PRO."
 if (-not $EnableDebug) {
     Write-Host "  NOTE: unsigned panels also need PlayerDebugMode (run with -EnableDebug, or use enable-debug-windows.reg)."
 }

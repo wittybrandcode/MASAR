@@ -175,7 +175,10 @@ var TIME_RULER_BRIDGE = (function () {
             '    }\n' +
             '})();';
 
+        var settled = false;
         var callTimeout = window.setTimeout(function () {
+            if (settled) { return; }
+            settled = true;
             if (busy) {
                 busy = false;
                 if (typeof job.callback === 'function') {
@@ -188,6 +191,8 @@ var TIME_RULER_BRIDGE = (function () {
         }, 15000);
 
         csInterface.evalScript(script, function (result) {
+            if (settled) { return; }
+            settled = true;
             window.clearTimeout(callTimeout);
             busy = false;
             var envelope = parseEnvelope(result);

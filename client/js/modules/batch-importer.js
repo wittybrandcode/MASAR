@@ -11,7 +11,7 @@ var TIME_RULER_BATCH_IMPORTER = (function () {
     var MOTION_PALETTES = {
         cyber: { lineColor: '#00f0ff', circleFill: '#00f0ff', circleStroke: '#ffffff', numberColor: '#ec4899', titleColor: '#ffffff', descColor: '#94a3b8' },
         gold: { lineColor: '#f59e0b', circleFill: '#f59e0b', circleStroke: '#ffffff', numberColor: '#f59e0b', titleColor: '#ffffff', descColor: '#d1d5db' },
-        tech: { lineColor: '#10b981', circleFill: '#059669', circleStroke: '#10b981', numberColor: '#10b981', titleColor: '#ffffff', descColor: '#94a3b8' },
+        tech: { lineColor: '#38bdf8', circleFill: '#0284c7', circleStroke: '#7dd3fc', numberColor: '#38bdf8', titleColor: '#ffffff', descColor: '#94a3b8' },
         emerald: { lineColor: '#10b981', circleFill: '#065f46', circleStroke: '#6ee7b7', numberColor: '#10b981', titleColor: '#ffffff', descColor: '#a7f3d0' },
         minimal: { lineColor: '#ffffff', circleFill: '#27272a', circleStroke: '#ffffff', numberColor: '#e4e4e7', titleColor: '#ffffff', descColor: '#a1a1aa' }
     };
@@ -147,13 +147,19 @@ var TIME_RULER_BATCH_IMPORTER = (function () {
                     var behindText = '';
                     var hasBehind = false;
 
+                    var behindNum = '';
                     if (line.indexOf('|') !== -1) {
                         var parts = line.split('|').map(function (p) { return p.trim(); });
-                        if (parts.length >= 3) {
+                        if (parts.length >= 4) {
                             num = parts[0];
                             title = parts[1];
-                            behindText = parts.slice(2).join(' | ');
-                            hasBehind = true;
+                            desc = parts[2];
+                            behindText = parts.slice(3).join(' | ');
+                            hasBehind = !!behindText;
+                        } else if (parts.length === 3) {
+                            num = parts[0];
+                            title = parts[1];
+                            desc = parts[2];
                         } else if (parts.length === 2) {
                             title = parts[0];
                             desc = parts[1];
@@ -164,6 +170,12 @@ var TIME_RULER_BATCH_IMPORTER = (function () {
                         desc = parts.slice(1).join(' - ');
                     } else {
                         title = line;
+                    }
+
+                    if (hasBehind && behindText.indexOf(':') !== -1) {
+                        var colonPos = behindText.indexOf(':');
+                        behindNum = behindText.slice(0, colonPos).trim();
+                        behindText = behindText.slice(colonPos + 1).trim();
                     }
 
                     var importedNode = {
@@ -195,10 +207,10 @@ var TIME_RULER_BATCH_IMPORTER = (function () {
                                 visible: true
                             },
                             behind: {
-                                type: hasBehind ? 'number_text' : 'none',
+                                type: hasBehind ? (behindNum && behindText ? 'number_text' : (behindText ? 'text' : 'number')) : 'none',
                                 title: '',
                                 text: behindText,
-                                number: hasBehind ? (behindText.indexOf(':') !== -1 ? behindText.split(':')[0].trim() : '') : '',
+                                number: behindNum,
                                 items: [],
                                 visible: hasBehind
                             }
@@ -254,13 +266,53 @@ var TIME_RULER_BATCH_IMPORTER = (function () {
         var p = presets[key];
         if (!p) return;
 
+        var defs = (store && typeof store.getDefaultState === 'function') ? store.getDefaultState() : null;
+        if (defs) {
+            for (var dk in defs) {
+                if (defs.hasOwnProperty(dk) && dk !== 'nodes' && dk !== 'liveSync') {
+                    state[dk] = defs[dk];
+                }
+            }
+        }
+
         for (var k in p) {
             if (p.hasOwnProperty(k) && k !== 'name' && k !== 'nodes') {
                 state[k] = p[k];
             }
         }
+
+        if (p.boxMode !== undefined) {
+            state.boxEnabled = (p.boxMode === 'glass' || p.boxMode === 'solid');
+            var effOp = (p.boxFillOpacity !== undefined) ? p.boxFillOpacity : (p.boxMode === 'glass' ? 25 : (p.boxMode === 'solid' ? 85 : state.boxFillOpacity));
+            if (p.titleBoxFillOpacity === undefined) state.titleBoxFillOpacity = effOp;
+            if (p.descBoxFillOpacity === undefined) state.descBoxFillOpacity = effOp;
+            if (p.behindBoxFillOpacity === undefined) state.behindBoxFillOpacity = effOp;
+        }
+        if (p.boxFillColor !== undefined) {
+            if (p.titleBoxFillColor === undefined) state.titleBoxFillColor = p.boxFillColor;
+            if (p.descBoxFillColor === undefined) state.descBoxFillColor = p.boxFillColor;
+        }
+        if (p.boxStrokeColor !== undefined && p.titleBoxStrokeColor === undefined) {
+            state.titleBoxStrokeColor = p.boxStrokeColor;
+        }
+        if (p.boxStrokeWidth !== undefined) {
+            if (p.titleBoxStrokeWidth === undefined) state.titleBoxStrokeWidth = p.boxStrokeWidth;
+            if (p.descBoxStrokeWidth === undefined) state.descBoxStrokeWidth = p.boxStrokeWidth;
+            if (p.behindBoxStrokeWidth === undefined) state.behindBoxStrokeWidth = p.boxStrokeWidth;
+        }
+        if (p.boxRadius !== undefined) {
+            if (p.titleBoxRadius === undefined) state.titleBoxRadius = p.boxRadius;
+            if (p.descBoxRadius === undefined) state.descBoxRadius = p.boxRadius;
+            if (p.behindBoxRadius === undefined) state.behindBoxRadius = p.boxRadius;
+        }
+
         if (p.nodes && Array.isArray(p.nodes)) {
             state.nodes = JSON.parse(JSON.stringify(p.nodes));
+        }
+        if (store && typeof store.migrateState === 'function') {
+            store.migrateState(state);
+        } else {
+            state.schemaVersion = 2;
         }
         state.selectedNodeIndex = 0;
 
@@ -276,14 +328,22 @@ var TIME_RULER_BATCH_IMPORTER = (function () {
             if (list[i].id === id) { tpl = list[i]; break; }
         }
         if (!tpl || !tpl.state) return;
-        var snap = tpl.state;
+        var snap = JSON.parse(JSON.stringify(tpl.state));
+        if (typeof store.migrateState === 'function') {
+            store.migrateState(snap);
+        }
         for (var k in snap) {
             if (snap.hasOwnProperty(k) && k !== 'nodes') {
                 state[k] = snap[k];
             }
         }
         if (snap.nodes && Array.isArray(snap.nodes)) {
-            state.nodes = JSON.parse(JSON.stringify(snap.nodes));
+            state.nodes = snap.nodes;
+        }
+        if (typeof store.migrateState === 'function') {
+            store.migrateState(state);
+        } else {
+            state.schemaVersion = 2;
         }
         state.selectedNodeIndex = 0;
         if (typeof onUpdate === 'function') onUpdate(tpl);
@@ -307,6 +367,7 @@ var TIME_RULER_BATCH_IMPORTER = (function () {
     }
 
     return {
+        MOTION_PALETTES: MOTION_PALETTES,
         setupAutoGrowTextarea: setupAutoGrowTextarea,
         setupSmartListTextarea: setupSmartListTextarea,
         initBatchImporter: initBatchImporter,

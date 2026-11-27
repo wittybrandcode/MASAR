@@ -1,0 +1,179 @@
+/* ============================================================================
+   MASAR PRO — 01-tokens.css (Chromium 88 Design Tokens & Emerald Palette)
+   ============================================================================ */
+/* ============================================
+   TEXTORO - Spectrum Design Variables
+   Adobe Spectrum Dark Theme for CEP
+   ============================================ */
+
+:root {
+    /* ═══════════════════════════════════════════
+       COLORS - Adobe Spectrum Dark Theme
+       ═══════════════════════════════════════════ */
+    
+    /* Background Layers */
+    --spectrum-bg-base: #1a1a1a;
+    --spectrum-bg-layer-1: #252525;
+    --spectrum-bg-layer-2: #2d2d2d;
+    --spectrum-bg-layer-3: #323232;
+    
+    /* Surface Colors */
+    --spectrum-surface-default: #2d2d2d;
+    --spectrum-surface-hover: #3a3a3a;
+    --spectrum-surface-active: #404040;
+    --spectrum-surface-selected: #10b981;
+    
+    /* Border Colors */
+    --spectrum-border-default: #3a3a3a;
+    --spectrum-border-hover: #4a4a4a;
+    --spectrum-border-focus: #10b981;
+    --spectrum-border-error: #d7373f;
+    
+    /* Text Colors */
+    --spectrum-text-primary: #e5e5e5;
+    --spectrum-text-secondary: #b3b3b3;
+    --spectrum-text-tertiary: #8c8c8c;
+    --spectrum-text-disabled: #5c5c5c;
+    --spectrum-text-inverse: #1a1a1a;
+    
+    /* Accent Colors (Emerald Spectrum) */
+    --spectrum-accent-default: #10b981;
+    --spectrum-accent-hover: #34d399;
+    --spectrum-accent-active: #059669;
+    
+    /* Semantic Colors */
+    --spectrum-positive: #10b981;
+    --spectrum-negative: #d7373f;
+    --spectrum-warning: #e68619;
+    --spectrum-info: #059669;
+    
+    /* ═══════════════════════════════════════════
+       TYPOGRAPHY
+       ═══════════════════════════════════════════ */
+    --spectrum-font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    --spectrum-font-size-xs: 10px;
+    --spectrum-font-size-sm: 11px;
+    --spectrum-font-size-md: 12px;
+    --spectrum-font-size-lg: 14px;
+    --spectrum-font-size-xl: 16px;
+    
+    /* ═══════════════════════════════════════════
+       SPACING (4px base)
+       ═══════════════════════════════════════════ */
+    --spectrum-spacing-50: 2px;
+    --spectrum-spacing-100: 4px;
+    --spectrum-spacing-200: 8px;
+    --spectrum-spacing-300: 12px;
+    --spectrum-spacing-400: 16px;
+    --spectrum-spacing-500: 20px;
+    --spectrum-spacing-600: 24px;
+    
+    /* ═══════════════════════════════════════════
+       SIZING
+       ═══════════════════════════════════════════ */
+    --spectrum-component-height-sm: 24px;
+    --spectrum-component-height-md: 28px;
+    --spectrum-component-height-lg: 32px;
+    
+    /* ═══════════════════════════════════════════
+       BORDER RADIUS
+       ═══════════════════════════════════════════ */
+    --spectrum-radius-sm: 0px;
+    --spectrum-radius-md: 0px;
+    --spectrum-radius-lg: 0px;
+    
+    /* ═══════════════════════════════════════════
+       SHADOWS
+       ═══════════════════════════════════════════ */
+    --spectrum-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --spectrum-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+    --spectrum-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5);
+    
+    /* ═══════════════════════════════════════════
+       TRANSITIONS
+       ═══════════════════════════════════════════ */
+    --spectrum-transition-fast: 100ms ease;
+    --spectrum-transition-normal: 150ms ease;
+    --spectrum-transition-slow: 200ms ease;
+}
+
+/* Spectrum Extended Aliases */
+:root {
+    /* === SPECTRUM DARK THEME COLORS === */
+    --sp-gray-50: #1a1a1a;
+    --sp-gray-75: #1e1e1e;
+    --sp-gray-100: #252525;
+    --sp-gray-200: #2d2d2d;
+    --sp-gray-300: #3a3a3a;
+    --sp-gray-400: #4a4a4a;
+    --sp-gray-500: #5c5c5c;
+    --sp-gray-600: #7c7c7c;
+    --sp-gray-700: #a0a0a0;
+    --sp-gray-800: #c4c4c4;
+    --sp-gray-900: #e5e5e5;
+
+    /* Semantic Aliases */
+    --bg-base: var(--sp-gray-50, #1a1a1a);
+    --bg-1: var(--sp-gray-75, #1e1e1e);
+    --bg-2: var(--sp-gray-100, #252525);
+    --bg-3: var(--sp-gray-200, #2d2d2d);
+    --bg-4: var(--sp-gray-300, #3a3a3a);
+    --border: var(--sp-gray-300, #3a3a3a);
+    --border-h: var(--sp-gray-400, #4a4a4a);
+    --t1: var(--sp-gray-900, #e5e5e5);
+    --t2: var(--sp-gray-700, #a0a0a0);
+    --t3: var(--sp-gray-600, #7c7c7c);
+
+    /* Adobe Spectrum Accents */
+    --accent: #10b981;
+    --accent-h: #34d399;
+    --accent-active: #059669;
+    --pos: #2d9d78;
+    --neg: #d7373f;
+    --warn: #e68619;
+
+    /* Metrics & Radii */
+    --sp-radius-sm: 0px;
+    --sp-radius-md: 0px;
+    --sp-radius-lg: 0px;
+    --radius-control: 0px;
+    --radius-card: 0px;
+    --input-h: 26px;
+    --input-h-sm: 22px;
+
+    /* Transitions & Shadows */
+    --tr-fast: 100ms ease;
+    --tr-normal: 150ms ease;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 5px rgba(0, 0, 0, 0.45);
+    --shadow-focus: 0 0 0 1.5px var(--accent);
+
+    /* Fonts */
+    --font-ui: "Cairo", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: "Consolas", "Courier New", monospace;
+}
+
+/* Flat v4 Emerald Core Palette */
+:root {
+    --bg-base: #101013;
+    --bg-card: #15151a;
+    --bg-card-hover: #1b1b22;
+    --bg-card-selected: #0e1c16;
+    --bg-input: #09090d;
+    --bg-widget: #121216;
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-card: rgba(255, 255, 255, 0.07);
+    --border-card-hover: rgba(255, 255, 255, 0.16);
+    --border-accent: #10b981;
+    --accent: #10b981;
+    --accent-light: #34d399;
+    --accent-hover: #059669;
+    --accent-glow: rgba(16, 185, 129, 0.25);
+    --text-primary: #ffffff;
+    --text-secondary: #e2e8f0;
+    --text-muted: #71717a;
+    --text-dim: #52525b;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+}

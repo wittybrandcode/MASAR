@@ -4,22 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MASAR PRO</title>
-    <!-- Google Fonts: Cairo -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Local Cairo Font Pack -->
     <link rel="stylesheet" href="assets/fonts/cairo/cairo.css">
-    <!-- FontAwesome 6 Suite (from TEXTORO) -->
-    <link rel="stylesheet" href="css/fontawesome/all.min.css">
     <!-- Phosphor Icon Fonts -->
     <link rel="stylesheet" href="assets/fonts/phosphor/phosphor.css">
-    <!-- Adobe Spectrum Design Tokens & System -->
-    <link rel="stylesheet" href="css/spectrum-vars.css">
-    <!-- TEXTORO Spectrum UI CSS -->
-    <link rel="stylesheet" href="css/textoro-spectrum.css">
-    <!-- FLAT v4 Emerald Masterclass Stylesheet -->
-    <link rel="stylesheet" href="css/flat-spectrum.css">
+    <!-- Chromium-88 Ordered CSS Architecture (Cascade Order + Low Specificity) -->
+    <link rel="stylesheet" href="css/01-tokens.css">
+    <link rel="stylesheet" href="css/02-base-layout.css">
+    <link rel="stylesheet" href="css/03-cards.css">
+    <link rel="stylesheet" href="css/04-controls-theme.css">
     <script src="vendor/CSInterface.js"></script>
 </head>
 <body>
@@ -30,10 +23,20 @@
     <header id="app-header" class="header" title="MASAR PRO — مسار موشن جرافيك تايم لاين">
         <div class="header-brand">
             <span class="logo">MASAR</span>
-            <span class="ver">PRO v2.5</span>
+            <span class="ver">PRO v1.0</span>
         </div>
 
         <div class="header-right" style="display: flex; align-items: center; gap: 6px;">
+            <!-- Undo / Redo History Controls -->
+            <div class="history-actions-group" style="display: flex; align-items: center; gap: 3px;">
+                <button type="button" class="btn-tool btn-tool--header" id="btn-undo" title="تراجع (Ctrl+Z)" disabled>
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                <button type="button" class="btn-tool btn-tool--header" id="btn-redo" title="إعادة (Ctrl+Y)" disabled>
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+
             <!-- Presets Button -->
             <button type="button" class="btn-header-presets" id="btn-header-presets" title="مكتبة القوالب الجاهزة ونظام الحفظ">
                 <i class="fa-solid fa-wand-magic-sparkles"></i>
@@ -88,15 +91,12 @@
             <!-- Sub-Toolbar for Node Actions -->
             <!-- Sub-Toolbar for Node Actions (100% Icon-First Architecture) -->
             <div class="nodes-subbar sub-toolbar">
-                <div style="display: flex; align-items: center; gap: 4px;">
+                <div class="subbar-group">
                     <button type="button" class="btn-tool btn-tool--primary btn-add-node" id="btn-add-node" title="إضافة عقدة جديدة">
                         <i class="fa-solid fa-plus"></i>
                     </button>
                     <button type="button" class="btn-tool btn-subbar" id="btn-open-batch-import" title="استيراد وتوزيع محتوى العقد دفعة واحدة">
                         <i class="fa-solid fa-file-import"></i>
-                    </button>
-                    <button type="button" class="btn-tool btn-subbar" id="btn-open-presets-subbar" title="مكتبة القوالب الجاهزة ونظام الحفظ" style="color: #10b981;">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
                     </button>
                     <button type="button" class="btn-tool btn-subbar" id="btn-reverse-nodes" title="قلب ترتيب المحطات (تصاعدي ↔ تنازلي)">
                         <i class="ph-bold ph-arrows-down-up" id="icon-reverse-nodes"></i>
@@ -106,6 +106,8 @@
                         <i class="ph-bold ph-caret-up-down"></i>
                     </button>
                 </div>
+
+                <span class="subbar-sep" aria-hidden="true"></span>
 
                 <div class="pattern-chips-group">
                     <button type="button" class="btn-pattern-icon pattern-chip" data-pattern="num-01" title="ترقيم تسلسلي: 01, 02..">
@@ -303,7 +305,7 @@
                             <div class="palette-swatches-strip">
                                 <button type="button" class="palette-btn-mini palette-btn" data-palette="cyber" style="background: #00f0ff;" title="Cyber Cyan"></button>
                                 <button type="button" class="palette-btn-mini palette-btn" data-palette="gold" style="background: #f59e0b;" title="Luxury Gold"></button>
-                                <button type="button" class="palette-btn-mini palette-btn" data-palette="tech" style="background: #10b981;" title="Tech Blue"></button>
+                                <button type="button" class="palette-btn-mini palette-btn" data-palette="tech" style="background: #38bdf8;" title="Tech Blue"></button>
                                 <button type="button" class="palette-btn-mini palette-btn" data-palette="emerald" style="background: #10b981;" title="Emerald Growth"></button>
                                 <button type="button" class="palette-btn-mini palette-btn" data-palette="minimal" style="background: #ffffff;" title="Monochrome Minimal"></button>
                             </div>
@@ -525,7 +527,7 @@
                                 <span class="prop-lbl"><i class="fa-solid fa-heading"></i> تعبئة العنوان:</span>
                                 <div class="prop-slider-unit">
                                     <input type="range" class="prop-slider sl" id="rng-title-box-fill-op" min="0" max="100" step="5" value="85" title="الشفافية">
-                                    <div class="prop-val-box"><input type="number" id="inp-title-box-fill-op" class="ni" value="85"><span class="unit">%</span></div>
+                                    <div class="prop-val-box"><input type="number" id="inp-title-box-fill-op" class="ni" value="85" min="0" max="100" step="5"><span class="unit">%</span></div>
                                     <div class="micro-color-swatch ci-wrap" id="wrap-title-box-fill-color" style="background: #0b1120;" title="لون التعبئة"><input type="color" id="inp-title-box-fill-color" value="#0b1120"></div>
                                 </div>
                             </div>
@@ -535,7 +537,7 @@
                                 <span class="prop-lbl"><i class="fa-solid fa-circle-notch"></i> إطار العنوان:</span>
                                 <div class="prop-slider-unit">
                                     <input type="range" class="prop-slider sl" id="rng-title-box-radius" min="0" max="30" step="1" value="6" title="تدوير الزوايا">
-                                    <div class="prop-val-box"><input type="number" id="inp-title-box-radius" class="ni" value="6"><span class="unit">R</span></div>
+                                    <div class="prop-val-box"><input type="number" id="inp-title-box-radius" class="ni" value="6" min="0" max="40" step="1"><span class="unit">R</span></div>
                                     <div class="micro-color-swatch ci-wrap" id="wrap-title-box-stroke-color" style="background: #10b981;" title="لون الإطار"><input type="color" id="inp-title-box-stroke-color" value="#10b981"></div>
                                 </div>
                             </div>
@@ -545,7 +547,7 @@
                                 <span class="prop-lbl"><i class="fa-solid fa-align-right"></i> تعبئة الشرح:</span>
                                 <div class="prop-slider-unit">
                                     <input type="range" class="prop-slider sl" id="rng-desc-box-fill-op" min="0" max="100" step="5" value="85" title="الشفافية">
-                                    <div class="prop-val-box"><input type="number" id="inp-desc-box-fill-op" class="ni" value="85"><span class="unit">%</span></div>
+                                    <div class="prop-val-box"><input type="number" id="inp-desc-box-fill-op" class="ni" value="85" min="0" max="100" step="5"><span class="unit">%</span></div>
                                     <div class="micro-color-swatch ci-wrap" id="wrap-desc-box-fill-color" style="background: #0b1120;" title="لون التعبئة"><input type="color" id="inp-desc-box-fill-color" value="#0b1120"></div>
                                 </div>
                             </div>
@@ -555,7 +557,7 @@
                                 <span class="prop-lbl"><i class="fa-solid fa-circle-notch"></i> إطار الشرح:</span>
                                 <div class="prop-slider-unit">
                                     <input type="range" class="prop-slider sl" id="rng-desc-box-radius" min="0" max="30" step="1" value="6" title="تدوير الزوايا">
-                                    <div class="prop-val-box"><input type="number" id="inp-desc-box-radius" class="ni" value="6"><span class="unit">R</span></div>
+                                    <div class="prop-val-box"><input type="number" id="inp-desc-box-radius" class="ni" value="6" min="0" max="40" step="1"><span class="unit">R</span></div>
                                     <div class="micro-color-swatch ci-wrap" id="wrap-desc-box-stroke-color" style="background: #10b981;" title="لون الإطار"><input type="color" id="inp-desc-box-stroke-color" value="#10b981"></div>
                                 </div>
                             </div>
@@ -622,12 +624,16 @@
     </div>
 
     <!-- Floating HUD Node Tooltip -->
-    <div id="hud-tooltip" class="hud-floating-tooltip" style="display: none;"></div>
+    <div id="hud-tooltip" class="canvas-hud-tooltip u-hidden"></div>
 
     <!-- 4. Fixed Action Bar (TEXTORO Bottom Strip) -->
     <footer id="footer-bar" class="action-bar">
         <div class="status">
             <span class="status-dot"></span>
+            <button type="button" id="btn-sync-from-comp" class="btn-comp-sync u-hidden" title="اكتُشفت حالة مسار في هذه الكومبوزيشن — انقر للمزامنة معها">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+                <span>مزامنة من الكومبوزيشن</span>
+            </button>
             <span id="feedback-line">جاهز للتحكم والمزامنة الفورية</span>
         </div>
 
@@ -653,9 +659,6 @@
 
 </div>
 
-<!-- ================================================================= -->
-<!-- Modal: SVG Shape Importer & Interactive Vector Preview            -->
-<!-- ================================================================= -->
 <!-- ================================================================= -->
 <!-- Modal: Presets & Templates Library Engine                         -->
 <!-- ================================================================= -->
@@ -687,13 +690,13 @@
                 <!-- Preset 1: Roadmap -->
                 <div class="preset-card-item">
                     <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1;">
-                        <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #10b981; flex-shrink: 0;">
+                        <div style="width: 32px; height: 32px; border-radius: 0px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #10b981; flex-shrink: 0;">
                             <i class="fa-solid fa-rocket"></i>
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
                                 <span style="font-weight: 700; font-size: 12px; color: #fff;">خارطة إطلاق منتج تقني</span>
-                                <span style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 10px;">5 محطات</span>
+                                <span style="font-size: 9px; color: #10b981; background: rgba(16,185,129,0.12); padding: 2px 6px; border-radius: 0px;">5 محطات</span>
                             </div>
                             <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; line-height: 1.4;">
                                 مسار زمردي صلب مع سهم نهائي، دوائر مصمتة ونجمة للمرحلة الختامية، مع بيانات إطلاق وتمويل استثماري.
@@ -708,13 +711,13 @@
                 <!-- Preset 2: Pipeline -->
                 <div class="preset-card-item">
                     <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1;">
-                        <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #f59e0b; flex-shrink: 0;">
+                        <div style="width: 32px; height: 32px; border-radius: 0px; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #f59e0b; flex-shrink: 0;">
                             <i class="fa-solid fa-film"></i>
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
                                 <span style="font-weight: 700; font-size: 12px; color: #fff;">خط إنتاج موشن برودكاست</span>
-                                <span style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.12); padding: 2px 6px; border-radius: 10px;">5 محطات</span>
+                                <span style="font-size: 9px; color: #f59e0b; background: rgba(245,158,11,0.12); padding: 2px 6px; border-radius: 0px;">5 محطات</span>
                             </div>
                             <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; line-height: 1.4;">
                                 خط عنبري متقطع بنمط Dash، معينات وأشكال مخصصة، صناديق نصوص صلبة داكنة لمراحل إنتاج متكاملة.
@@ -729,13 +732,13 @@
                 <!-- Preset 3: Scientific -->
                 <div class="preset-card-item">
                     <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1;">
-                        <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #3b82f6; flex-shrink: 0;">
+                        <div style="width: 32px; height: 32px; border-radius: 0px; background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #3b82f6; flex-shrink: 0;">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
                                 <span style="font-weight: 700; font-size: 12px; color: #fff;">سجل تاريخي وأكاديمي</span>
-                                <span style="font-size: 9px; color: #3b82f6; background: rgba(59,130,246,0.12); padding: 2px 6px; border-radius: 10px;">4 محطات</span>
+                                <span style="font-size: 9px; color: #3b82f6; background: rgba(59,130,246,0.12); padding: 2px 6px; border-radius: 0px;">4 محطات</span>
                             </div>
                             <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; line-height: 1.4;">
                                 مسار زمني دقيق ومتزن بأطياف زرقاء، ترقيم تواريخ وسنوات، نصوص واضحة وموثقة للتقارير والأفلام الوثائقية.
@@ -750,13 +753,13 @@
                 <!-- Preset 4: Tech Dark -->
                 <div class="preset-card-item">
                     <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1;">
-                        <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(6, 182, 212, 0.15); border: 1px solid #06b6d4; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #06b6d4; flex-shrink: 0;">
+                        <div style="width: 32px; height: 32px; border-radius: 0px; background: rgba(6, 182, 212, 0.15); border: 1px solid #06b6d4; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #06b6d4; flex-shrink: 0;">
                             <i class="fa-solid fa-server"></i>
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
                                 <span style="font-weight: 700; font-size: 12px; color: #fff;">نظام تقني داكن (Infra Tech)</span>
-                                <span style="font-size: 9px; color: #06b6d4; background: rgba(6,182,212,0.12); padding: 2px 6px; border-radius: 10px;">4 محطات</span>
+                                <span style="font-size: 9px; color: #06b6d4; background: rgba(6,182,212,0.12); padding: 2px 6px; border-radius: 0px;">4 محطات</span>
                             </div>
                             <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; line-height: 1.4;">
                                 طابع سيان داكن عالي التقنية، صناديق زجاجية شفافة، معينات خضراء ومسدسات وشارات برمجية احترافية.
@@ -771,13 +774,13 @@
                 <!-- Preset 5: Retro Neon -->
                 <div class="preset-card-item">
                     <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1;">
-                        <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(244, 63, 94, 0.15); border: 1px solid #f43f5e; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #f43f5e; flex-shrink: 0;">
+                        <div style="width: 32px; height: 32px; border-radius: 0px; background: rgba(244, 63, 94, 0.15); border: 1px solid #f43f5e; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #f43f5e; flex-shrink: 0;">
                             <i class="fa-solid fa-crosshairs"></i>
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
                                 <span style="font-weight: 700; font-size: 12px; color: #fff;">نيون سينمائي مشع (Cyber Glow)</span>
-                                <span style="font-size: 9px; color: #f43f5e; background: rgba(244,63,94,0.12); padding: 2px 6px; border-radius: 10px;">3 محطات</span>
+                                <span style="font-size: 9px; color: #f43f5e; background: rgba(244,63,94,0.12); padding: 2px 6px; border-radius: 0px;">3 محطات</span>
                             </div>
                             <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; line-height: 1.4;">
                                 مسار وردي نيون متوهج بأسهم مزدوجة، صناديق نيونية سينمائية، حركات كاميرا سريعة متناغمة مع المؤثرات.
@@ -792,13 +795,13 @@
                 <!-- Preset 6: Minimal Clean -->
                 <div class="preset-card-item">
                     <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1;">
-                        <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(203, 213, 225, 0.15); border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #cbd5e1; flex-shrink: 0;">
+                        <div style="width: 32px; height: 32px; border-radius: 0px; background: rgba(203, 213, 225, 0.15); border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #cbd5e1; flex-shrink: 0;">
                             <i class="fa-solid fa-circle-notch"></i>
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
                                 <span style="font-weight: 700; font-size: 12px; color: #fff;">بسيط وهادئ (Minimal Clean)</span>
-                                <span style="font-size: 9px; color: #cbd5e1; background: rgba(203,213,225,0.12); padding: 2px 6px; border-radius: 10px;">3 محطات</span>
+                                <span style="font-size: 9px; color: #cbd5e1; background: rgba(203,213,225,0.12); padding: 2px 6px; border-radius: 0px;">3 محطات</span>
                             </div>
                             <div style="font-size: 10px; color: var(--text-dim); margin-top: 3px; line-height: 1.4;">
                                 خط رفيع رمادي ناصع، دوائر ناعمة ونصوص حرة بدون صناديق لطابع أستوديو سينمائي فائق النقاء والهدوء.
@@ -814,7 +817,7 @@
             <!-- 2. Custom User Presets View -->
             <div id="view-presets-custom" style="display: none; flex-direction: column; gap: 10px;">
                 <!-- Save Current Work Box -->
-                <div style="background: rgba(16, 185, 129, 0.08); border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: 6px; padding: 10px;">
+                <div style="background: rgba(16, 185, 129, 0.08); border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: 0px; padding: 10px;">
                     <div style="font-size: 11px; font-weight: 700; color: #10b981; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-floppy-disk"></i>
                         <span>حفظ الخط الزمني الحالي كقالب مخصص</span>
@@ -995,11 +998,11 @@
             <!-- Dual Viewport & Settings Deck -->
             <div class="row-2" style="margin-bottom: 8px;">
                 <!-- Left: Viewport (130x130) -->
-                <div style="background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--sp-radius-md); height: 130px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                <div style="background: var(--bg-1); border: 1px solid var(--border); border-radius: 0px; height: 130px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                     <div id="canvas-svg-layer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                         <i class="fa-solid fa-eye" style="font-size: 24px; color: var(--t3);"></i>
                     </div>
-                    <div id="lbl-svg-sim-stats" style="position: absolute; bottom: 4px; right: 4px; font-size: 8px; color: var(--t3); background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: 2px;">-</div>
+                    <div id="lbl-svg-sim-stats" style="position: absolute; bottom: 4px; right: 4px; font-size: 8px; color: var(--t3); background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: 0px;">-</div>
                 </div>
 
                 <!-- Right: Properties & 3x3 Anchors -->
@@ -1046,17 +1049,165 @@
     </div>
 </div>
 
+<!-- 8. Internal System Modal Dialog (Replaces native window.alert & window.confirm) -->
+<div id="modal-system-dialog" class="modal-overlay" style="display: none;">
+    <div class="modal-card sys-dlg-card">
+        <div class="modal-header">
+            <span id="dlg-sys-title" class="modal-title">تنبيه</span>
+            <button type="button" class="btn-modal-close" id="btn-close-sys-dialog" title="إغلاق">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="sys-dlg-body">
+            <i id="dlg-sys-icon" class="sys-dlg-icon fa-solid fa-circle-info"></i>
+            <div id="dlg-sys-message" class="sys-dlg-msg"></div>
+        </div>
+        <div class="sys-dlg-footer">
+            <button type="button" class="ab sys-dlg-btn u-hidden" id="dlg-sys-cancel">إلغاء</button>
+            <button type="button" class="ab ab-p sys-dlg-btn" id="dlg-sys-ok">حسناً</button>
+        </div>
+    </div>
+</div>
+
+<!-- 9. Node Customization Studio Modal (#modal-node-customize) -->
+<div id="modal-node-customize" class="modal-overlay" style="display: none;">
+    <div class="modal-card node-cust-modal-card">
+        <div class="modal-head node-cust-modal-head">
+            <div class="node-cust-head-left">
+                <span class="node-cust-badge" id="nc-modal-badge">01</span>
+                <div class="node-cust-title-wrap">
+                    <span class="modal-title" id="nc-modal-title">تخصيص العقدة #1</span>
+                    <span class="node-cust-sub" id="nc-modal-sub">الشكل والأبعاد والارتكاز</span>
+                </div>
+            </div>
+            <div class="node-cust-head-actions">
+                <button type="button" class="btn-drawer-revert u-hidden" id="nc-modal-btn-revert" title="إلغاء التخصيص والعودة لاتباع النمط العام">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                    <span>استعادة العام</span>
+                </button>
+                <span class="drawer-badge-inherit" id="nc-modal-inherit-badge">
+                    <i class="fa-solid fa-globe"></i>
+                    <span>تتبع العام</span>
+                </span>
+                <button type="button" class="modal-close-btn" id="btn-close-node-cust-modal" title="إغلاق">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+        <div class="modal-body-deck node-cust-modal-body" id="node-customize-modal-body">
+            <!-- Dynamically populated by card-shape-drawer.js -->
+        </div>
+        <div class="node-cust-modal-foot">
+            <div class="node-cust-nav-group">
+                <button type="button" class="ab node-cust-nav-btn" id="nc-modal-prev" title="العقدة السابقة">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <span>السابقة</span>
+                </button>
+                <button type="button" class="ab node-cust-nav-btn" id="nc-modal-next" title="العقدة التالية">
+                    <span>التالية</span>
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+            </div>
+            <button type="button" class="ab ab-p node-cust-done-btn" id="nc-modal-done">
+                <i class="fa-solid fa-check"></i>
+                <span>تم</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 10. Studio HSV Color Picker Modal (#modal-color-picker) -->
+<div id="modal-color-picker" class="modal-overlay" style="display: none;">
+    <div class="modal-card cp-modal-card">
+        <div class="modal-head cp-modal-head">
+            <div class="modal-title">
+                <i class="fa-solid fa-palette"></i>
+                <span>منتقي الألوان</span>
+                <span id="cp-modal-subtitle" class="cp-subtitle"></span>
+            </div>
+            <button type="button" class="modal-close-btn" id="btn-close-color-modal" title="إغلاق (Esc)">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-body-deck cp-modal-body">
+            <!-- 2D Saturation / Brightness Canvas -->
+            <div class="cp-canvas-wrap">
+                <canvas id="cp-sv-canvas" width="280" height="145"></canvas>
+                <span id="cp-sv-cursor" class="cp-sv-cursor"></span>
+            </div>
+
+            <!-- Hue Spectrum Bar -->
+            <div class="cp-hue-row">
+                <input type="range" id="cp-hue-slider" class="cp-hue-slider" min="0" max="360" step="1" value="160">
+                <span id="cp-hue-deg" class="cp-hue-deg">160°</span>
+            </div>
+
+            <!-- Compare Preview + HEX Input -->
+            <div class="cp-preview-hex-row">
+                <div class="cp-compare-box" title="السابق مقابل الحالي">
+                    <button type="button" id="cp-prev-swatch" class="cp-compare-half" title="اللون السابق — انقر للاستعادة"></button>
+                    <div id="cp-curr-swatch" class="cp-compare-half cp-compare-curr" title="اللون الحالي"></div>
+                </div>
+                <div class="cp-hex-group">
+                    <span class="cp-hash">#</span>
+                    <input type="text" id="cp-inp-hex" class="cp-hex-inp" maxlength="7" spellcheck="false" value="10B981" title="رمز اللون HEX">
+                    <button type="button" id="cp-btn-copy" class="cp-icon-btn" title="نسخ كود HEX">
+                        <i class="fa-solid fa-clone"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- RGB Channels -->
+            <div class="cp-rgb-row">
+                <label class="cp-rgb-cell"><span class="cp-rgb-tag">R</span><input type="number" id="cp-inp-r" class="cp-rgb-inp" min="0" max="255" value="16"></label>
+                <label class="cp-rgb-cell"><span class="cp-rgb-tag">G</span><input type="number" id="cp-inp-g" class="cp-rgb-inp" min="0" max="255" value="185"></label>
+                <label class="cp-rgb-cell"><span class="cp-rgb-tag">B</span><input type="number" id="cp-inp-b" class="cp-rgb-inp" min="0" max="255" value="129"></label>
+            </div>
+
+            <!-- Curated Studio Swatches -->
+            <div class="cp-swatches-section">
+                <span class="cp-section-lbl">لوحة الألوان المقترحة</span>
+                <div id="cp-preset-swatches" class="cp-swatches-grid"></div>
+            </div>
+
+            <!-- Recent Colors -->
+            <div id="cp-recent-wrap" class="cp-swatches-section u-hidden">
+                <span class="cp-section-lbl">المستخدمة مؤخراً</span>
+                <div id="cp-recent-swatches" class="cp-swatches-grid"></div>
+            </div>
+        </div>
+        <div class="cp-modal-foot">
+            <button type="button" class="ab cp-btn-reset" id="cp-btn-reset" title="إعادة للون الأصلي">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>استعادة</span>
+            </button>
+            <div class="cp-foot-actions">
+                <button type="button" class="ab cp-btn-cancel" id="cp-btn-cancel">إلغاء</button>
+                <button type="button" class="ab ab-p cp-btn-ok" id="cp-btn-ok">
+                    <i class="fa-solid fa-check"></i>
+                    <span>تطبيق اللون</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Scripts -->
 <script src="js/svg-shapes.js"></script>
 <script src="js/bridge.js"></script>
+<script src="js/modules/ui-icons.js"></script>
+<script src="js/modules/ui-dialog.js"></script>
+<script src="js/modules/ui-color-picker.js"></script>
 <script src="js/modules/state-store.js"></script>
 <script src="js/modules/host-bridge.js"></script>
 <script src="js/modules/timeline-hud.js"></script>
 <script src="js/modules/batch-importer.js"></script>
 <script src="js/modules/shapes-engine.js"></script>
 <script src="js/modules/global-controls.js"></script>
+<script src="js/modules/card-stream-controls.js"></script>
+<script src="js/modules/card-shape-drawer.js"></script>
+<script src="js/modules/card-source-tabs.js"></script>
 <script src="js/modules/card-builder.js"></script>
-<script src="js/modules/node-manager.js"></script>
 <script src="js/modules/mogrt-export.js"></script>
 <script src="js/app.js"></script>
 

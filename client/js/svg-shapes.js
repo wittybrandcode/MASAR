@@ -17,22 +17,20 @@
 
     var KAPPA = 0.5522847498307936;
 
-    // Visual intuitive anchor mapping:
-    // In AE 2D space, (0,0) is at the track node. +Y is downwards, -Y is upwards. +X is right, -X is left.
-    // When user selects "Top" (أعلى), the shape must sit ABOVE the track (vy <= 0, so anchor.y = 256).
-    // When user selects "Bottom" (أسفل), the shape must sit BELOW the track (vy >= 0, so anchor.y = 0).
-    // When user selects "Left" (يسار), the shape must sit to the LEFT of the node (vx <= 0, so anchor.x = 256).
-    // When user selects "Right" (يمين), the shape must sit to the RIGHT of the node (vx >= 0, so anchor.x = 0).
+    // Standard 256x256 Reference Point / Anchor Locator on the shape itself.
+    // The chosen point on the shape snaps to (0,0) on the track in both AE vector space and CSS preview:
+    // bottom-center (128,256) snaps the shape's bottom tip to the track so it sits ABOVE the track (-Y in AE).
+    // top-center (128,0) snaps the shape's top edge to the track so it hangs BELOW the track (+Y in AE).
     var ANCHORS = {
-        'top-left':      { id: 'top-left',      name: 'أعلى اليسار', x: 256, y: 256 },
-        'top-center':    { id: 'top-center',    name: 'أعلى الوسط', x: 128, y: 256 },
-        'top-right':     { id: 'top-right',     name: 'أعلى اليمين', x: 0,   y: 256 },
-        'middle-left':   { id: 'middle-left',   name: 'وسط اليسار', x: 256, y: 128 },
+        'top-left':      { id: 'top-left',      name: 'أعلى اليسار', x: 0,   y: 0 },
+        'top-center':    { id: 'top-center',    name: 'أعلى الوسط', x: 128, y: 0 },
+        'top-right':     { id: 'top-right',     name: 'أعلى اليمين', x: 256, y: 0 },
+        'middle-left':   { id: 'middle-left',   name: 'وسط اليسار', x: 0,   y: 128 },
         'center':        { id: 'center',        name: 'المركز (على المسار)', x: 128, y: 128 },
-        'middle-right':  { id: 'middle-right',  name: 'وسط اليمين', x: 0,   y: 128 },
-        'bottom-left':   { id: 'bottom-left',   name: 'أسفل اليسار', x: 256, y: 0 },
-        'bottom-center': { id: 'bottom-center', name: 'أسفل الوسط', x: 128, y: 0 },
-        'bottom-right':  { id: 'bottom-right',  name: 'أسفل اليمين', x: 0,   y: 0 }
+        'middle-right':  { id: 'middle-right',  name: 'وسط اليمين', x: 256, y: 128 },
+        'bottom-left':   { id: 'bottom-left',   name: 'أسفل اليسار', x: 0,   y: 256 },
+        'bottom-center': { id: 'bottom-center', name: 'أسفل الوسط', x: 128, y: 256 },
+        'bottom-right':  { id: 'bottom-right',  name: 'أسفل اليمين', x: 256, y: 256 }
     };
 
     var SHAPES = [
@@ -102,6 +100,7 @@
             nameEn: 'Map Pin',
             category: 'markers',
             defaultAnchor: 'bottom-center',
+            labelCenter: [128, 106],
             isHollow: false,
             svg: '<path d="M 128 244 C 110 206 68 152 68 106 A 60 60 0 1 1 188 106 C 188 152 146 206 128 244 Z"/>',
             subPaths: [{
@@ -132,6 +131,7 @@
             nameEn: 'Pointer Down',
             category: 'markers',
             defaultAnchor: 'bottom-center',
+            labelCenter: [128, 116],
             isHollow: false,
             svg: '<polygon points="40,56 216,56 128,236"/>',
             subPaths: [{
@@ -147,6 +147,7 @@
             nameEn: 'Pointer Up',
             category: 'markers',
             defaultAnchor: 'top-center',
+            labelCenter: [128, 140],
             isHollow: false,
             svg: '<polygon points="128,20 216,200 40,200"/>',
             subPaths: [{
@@ -195,6 +196,7 @@
             nameEn: 'Milestone Badge',
             category: 'markers',
             defaultAnchor: 'bottom-center',
+            labelCenter: [128, 120],
             isHollow: false,
             svg: '<path d="M 48 38 L 208 38 L 208 130 C 208 175 168 215 128 238 C 88 215 48 175 48 130 Z"/>',
             subPaths: [{
@@ -216,6 +218,7 @@
             nameEn: 'Flag',
             category: 'markers',
             defaultAnchor: 'bottom-center',
+            labelCenter: [134, 76],
             isHollow: false,
             svg: '<rect x="68" y="24" width="12" height="218"/><polygon points="80,24 224,76 80,128"/>',
             subPaths: [
@@ -338,6 +341,9 @@
     SHAPES.forEach(function (s) {
         shapeMap[s.id] = s;
     });
+    if (!shapeMap['triangle'] && shapeMap['triangle_down']) {
+        shapeMap['triangle'] = shapeMap['triangle_down'];
+    }
 
     /* ------------------------------------------------------------------ */
     /* Custom Shapes Persistence (localStorage)                            */
@@ -345,6 +351,7 @@
 
     var STORAGE_CUSTOM_SHAPES_KEY = 'TIME_RULER_CUSTOM_SHAPES_V1';
     var customShapes = [];
+    var lastStorageError = null;
 
     function loadCustomShapes() {
         try {
@@ -368,12 +375,18 @@
     }
 
     function saveCustomShapes() {
+        lastStorageError = null;
         try {
             if (typeof localStorage !== 'undefined') {
                 localStorage.setItem(STORAGE_CUSTOM_SHAPES_KEY, JSON.stringify(customShapes));
             }
+            return { ok: true };
         } catch (e) {
+            lastStorageError = (e && e.name === 'QuotaExceededError')
+                ? 'تم تجاوز سعة التخزين المحلية (QuotaExceededError)'
+                : String(e);
             console.error('Failed to save custom shapes:', e);
+            return { ok: false, error: lastStorageError };
         }
     }
 
@@ -382,6 +395,8 @@
 
     function addCustomShape(shapeDef) {
         if (!shapeDef || !shapeDef.id || !shapeDef.subPaths) return null;
+        var prevCustom = customShapes.slice();
+        var prevMap = shapeMap[shapeDef.id];
         var existsIdx = -1;
         for (var i = 0; i < customShapes.length; i++) {
             if (customShapes[i].id === shapeDef.id) {
@@ -395,7 +410,13 @@
             customShapes.unshift(shapeDef); // newest first
         }
         shapeMap[shapeDef.id] = shapeDef;
-        saveCustomShapes();
+        var saved = saveCustomShapes();
+        if (!saved.ok) {
+            customShapes = prevCustom;
+            if (prevMap) shapeMap[shapeDef.id] = prevMap;
+            else delete shapeMap[shapeDef.id];
+            return { ok: false, error: saved.error };
+        }
         return shapeDef;
     }
 
@@ -518,11 +539,48 @@
         return curves;
     }
 
+    function tokenizePathArgs(upperCmd, argsStr) {
+        if (!argsStr) return [];
+        if (upperCmd !== 'A') {
+            var numRegex = /[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?/g;
+            var out = [];
+            var m;
+            while ((m = numRegex.exec(argsStr)) !== null) {
+                out.push(parseFloat(m[0]));
+            }
+            return out;
+        }
+        // Arc commands encode 7-argument tuples where largeArc (index 3) and sweep (index 4) are single flags (0|1) without mandatory whitespace after them
+        var args = [];
+        var pos = 0;
+        var len = argsStr.length;
+        var singleNumRe = /^[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?/;
+        while (pos < len) {
+            var argSlot = args.length % 7;
+            while (pos < len && (argsStr[pos] === ',' || /\s/.test(argsStr[pos]))) pos++;
+            if (pos >= len) break;
+            if (argSlot === 3 || argSlot === 4) {
+                var ch = argsStr[pos];
+                if (ch === '0' || ch === '1') {
+                    args.push(parseInt(ch, 10));
+                    pos += 1;
+                } else {
+                    break;
+                }
+            } else {
+                var nm = singleNumRe.exec(argsStr.slice(pos));
+                if (!nm) break;
+                args.push(parseFloat(nm[0]));
+                pos += nm[0].length;
+            }
+        }
+        return args;
+    }
+
     function parseSvgPathD(d) {
         if (!d || typeof d !== 'string') return [];
 
         var cmdRegex = /([a-df-z])([^a-df-z]*)/gi;
-        var numRegex = /[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?/g;
 
         var subPaths = [];
         var curSubPath = { vertices: [], inTangents: [], outTangents: [], closed: false };
@@ -537,12 +595,7 @@
             var cmd = match[1];
             var isRel = (cmd === cmd.toLowerCase());
             var upper = cmd.toUpperCase();
-            var argsStr = match[2];
-            var args = [];
-            var numMatch;
-            while ((numMatch = numRegex.exec(argsStr)) !== null) {
-                args.push(parseFloat(numMatch[0]));
-            }
+            var args = tokenizePathArgs(upper, match[2]);
 
             var i = 0;
             switch (upper) {
@@ -779,13 +832,39 @@
 
     function calculateBounds(subPaths) {
         var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        function includePt(x, y) {
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+        }
+        function sampleSeg(p0, outT, p1, inT) {
+            includePt(p0[0], p0[1]);
+            includePt(p1[0], p1[1]);
+            var hasCurve = (outT[0] !== 0 || outT[1] !== 0 || inT[0] !== 0 || inT[1] !== 0);
+            if (!hasCurve) return;
+            var c1x = p0[0] + outT[0], c1y = p0[1] + outT[1];
+            var c2x = p1[0] + inT[0], c2y = p1[1] + inT[1];
+            for (var step = 1; step < 16; step++) {
+                var t = step / 16;
+                var mt = 1 - t;
+                var x = mt * mt * mt * p0[0] + 3 * mt * mt * t * c1x + 3 * mt * t * t * c2x + t * t * t * p1[0];
+                var y = mt * mt * mt * p0[1] + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t * t * t * p1[1];
+                includePt(x, y);
+            }
+        }
         subPaths.forEach(function (sp) {
-            sp.vertices.forEach(function (v) {
-                if (v[0] < minX) minX = v[0];
-                if (v[1] < minY) minY = v[1];
-                if (v[0] > maxX) maxX = v[0];
-                if (v[1] > maxY) maxY = v[1];
-            });
+            if (!sp.vertices || sp.vertices.length === 0) return;
+            for (var i = 0; i < sp.vertices.length; i++) {
+                includePt(sp.vertices[i][0], sp.vertices[i][1]);
+                if (i > 0) {
+                    sampleSeg(sp.vertices[i - 1], sp.outTangents[i - 1] || [0, 0], sp.vertices[i], sp.inTangents[i] || [0, 0]);
+                }
+            }
+            if (sp.closed && sp.vertices.length > 1) {
+                var last = sp.vertices.length - 1;
+                sampleSeg(sp.vertices[last], sp.outTangents[last] || [0, 0], sp.vertices[0], sp.inTangents[0] || [0, 0]);
+            }
         });
         if (minX === Infinity) {
             return { minX: 0, minY: 0, maxX: 256, maxY: 256 };
@@ -874,6 +953,113 @@
         return d ? ('<path fill-rule="evenodd" d="' + d + '" />') : '';
     }
 
+    function polyPointsToPathD(ptsStr, closed) {
+        if (!ptsStr || typeof ptsStr !== 'string') return '';
+        var nums = ptsStr.match(/[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?/g);
+        if (!nums || nums.length < 4) return '';
+        var d = 'M ' + nums[0] + ' ' + nums[1];
+        for (var i = 2; i + 1 < nums.length; i += 2) {
+            d += ' L ' + nums[i] + ' ' + nums[i + 1];
+        }
+        return closed ? (d + ' Z') : d;
+    }
+
+    function mulMat(m1, m2) {
+        return [
+            m1[0] * m2[0] + m1[2] * m2[1],
+            m1[1] * m2[0] + m1[3] * m2[1],
+            m1[0] * m2[2] + m1[2] * m2[3],
+            m1[1] * m2[2] + m1[3] * m2[3],
+            m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+            m1[1] * m2[4] + m1[3] * m2[5] + m1[5]
+        ];
+    }
+
+    function parseTransformAttr(tfStr) {
+        var mat = [1, 0, 0, 1, 0, 0];
+        if (!tfStr || typeof tfStr !== 'string') return mat;
+        var fnRe = /(matrix|translate|scale|rotate)\s*\(([^)]*)\)/gi;
+        var m;
+        while ((m = fnRe.exec(tfStr)) !== null) {
+            var fn = m[1].toLowerCase();
+            var nums = (m[2].match(/[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?/g) || []).map(parseFloat);
+            var cur = [1, 0, 0, 1, 0, 0];
+            if (fn === 'translate' && nums.length >= 1) {
+                cur = [1, 0, 0, 1, nums[0] || 0, nums[1] || 0];
+            } else if (fn === 'scale' && nums.length >= 1) {
+                var sx = nums[0];
+                var sy = (nums.length >= 2) ? nums[1] : sx;
+                cur = [sx, 0, 0, sy, 0, 0];
+            } else if (fn === 'rotate' && nums.length >= 1) {
+                var ang = (nums[0] * Math.PI) / 180;
+                var cos = Math.cos(ang), sin = Math.sin(ang);
+                if (nums.length >= 3) {
+                    var cx = nums[1], cy = nums[2];
+                    cur = mulMat([1, 0, 0, 1, cx, cy], mulMat([cos, sin, -sin, cos, 0, 0], [1, 0, 0, 1, -cx, -cy]));
+                } else {
+                    cur = [cos, sin, -sin, cos, 0, 0];
+                }
+            } else if (fn === 'matrix' && nums.length >= 6) {
+                cur = nums.slice(0, 6);
+            }
+            mat = mulMat(mat, cur);
+        }
+        return mat;
+    }
+
+    function getCumulativeMatrix(el) {
+        var chain = [];
+        var cur = el;
+        while (cur && cur.getAttribute) {
+            var tf = cur.getAttribute('transform');
+            if (tf) chain.unshift(parseTransformAttr(tf));
+            cur = cur.parentNode;
+        }
+        var mat = [1, 0, 0, 1, 0, 0];
+        for (var i = 0; i < chain.length; i++) {
+            mat = mulMat(mat, chain[i]);
+        }
+        return mat;
+    }
+
+    function applyMatrixToSubPaths(subPaths, mat) {
+        if (!mat || (mat[0] === 1 && mat[1] === 0 && mat[2] === 0 && mat[3] === 1 && mat[4] === 0 && mat[5] === 0)) {
+            return subPaths;
+        }
+        var a = mat[0], b = mat[1], c = mat[2], d = mat[3], e = mat[4], f = mat[5];
+        return subPaths.map(function (sp) {
+            return {
+                closed: sp.closed,
+                vertices: sp.vertices.map(function (v) { return [a * v[0] + c * v[1] + e, b * v[0] + d * v[1] + f]; }),
+                inTangents: sp.inTangents.map(function (t) { return [a * t[0] + c * t[1], b * t[0] + d * t[1]]; }),
+                outTangents: sp.outTangents.map(function (t) { return [a * t[0] + c * t[1], b * t[0] + d * t[1]]; })
+            };
+        });
+    }
+
+    function rectToPathD(rx, ry, rw, rh, radX, radY) {
+        var rrx = Math.min(Math.max(0, radX || radY || 0), rw / 2);
+        var rry = Math.min(Math.max(0, radY || radX || 0), rh / 2);
+        if (rrx > 0 && rry > 0) {
+            return 'M ' + (rx + rrx) + ' ' + ry +
+                ' h ' + (rw - 2 * rrx) +
+                ' a ' + rrx + ' ' + rry + ' 0 0 1 ' + rrx + ' ' + rry +
+                ' v ' + (rh - 2 * rry) +
+                ' a ' + rrx + ' ' + rry + ' 0 0 1 ' + (-rrx) + ' ' + rry +
+                ' h ' + (-(rw - 2 * rrx)) +
+                ' a ' + rrx + ' ' + rry + ' 0 0 1 ' + (-rrx) + ' ' + (-rry) +
+                ' v ' + (-(rh - 2 * rry)) +
+                ' a ' + rrx + ' ' + rry + ' 0 0 1 ' + rrx + ' ' + (-rry) + ' Z';
+        }
+        return 'M ' + rx + ' ' + ry + ' h ' + rw + ' v ' + rh + ' h -' + rw + ' Z';
+    }
+
+    function ellipseToPathD(cx, cy, rx, ry) {
+        return 'M ' + (cx + rx) + ' ' + cy +
+            ' a ' + rx + ' ' + ry + ' 0 1 0 ' + (-2 * rx) + ' 0' +
+            ' a ' + rx + ' ' + ry + ' 0 1 0 ' + (2 * rx) + ' 0 Z';
+    }
+
     /**
      * High-Level SVG Markup Parser: Converts raw SVG XML or path string to normalized subpaths
      */
@@ -886,49 +1072,60 @@
             return { ok: false, error: 'النص المدخل فارغ' };
         }
 
-        var dMatches = [];
+        var allSubPaths = [];
+        var usedDomParser = false;
 
-        // In browser DOM environment, use DOMParser
+        // In browser DOM environment, use DOMParser for full nested groups + transforms
         if (typeof DOMParser !== 'undefined') {
             try {
                 var parser = new DOMParser();
                 var doc = parser.parseFromString(svgString, 'image/svg+xml');
                 var parserError = doc.querySelector('parsererror');
                 if (!parserError) {
-                    // Extract all geometry elements
-                    var pathEls = doc.querySelectorAll('path');
-                    for (var p = 0; p < pathEls.length; p++) {
-                        var d = pathEls[p].getAttribute('d');
-                        if (d) dMatches.push(d);
-                    }
-
-                    var polyEls = doc.querySelectorAll('polygon, polyline');
-                    for (var pl = 0; pl < polyEls.length; pl++) {
-                        var pts = polyEls[pl].getAttribute('points');
-                        if (pts) {
-                            dMatches.push('M ' + pts.trim().replace(/\s+/g, ' L ') + (polyEls[pl].tagName === 'polygon' ? ' Z' : ''));
+                    usedDomParser = true;
+                    var shapesSelector = 'path, polygon, polyline, rect, circle, ellipse, line';
+                    var els = doc.querySelectorAll(shapesSelector);
+                    for (var idx = 0; idx < els.length; idx++) {
+                        var el = els[idx];
+                        var tag = el.tagName ? el.tagName.toLowerCase() : '';
+                        var dStr = '';
+                        if (tag === 'path') {
+                            dStr = el.getAttribute('d') || '';
+                        } else if (tag === 'polygon' || tag === 'polyline') {
+                            dStr = polyPointsToPathD(el.getAttribute('points'), tag === 'polygon');
+                        } else if (tag === 'rect') {
+                            var rx = parseFloat(el.getAttribute('x')) || 0;
+                            var ry = parseFloat(el.getAttribute('y')) || 0;
+                            var rw = parseFloat(el.getAttribute('width')) || 0;
+                            var rh = parseFloat(el.getAttribute('height')) || 0;
+                            var radX = parseFloat(el.getAttribute('rx')) || 0;
+                            var radY = parseFloat(el.getAttribute('ry')) || 0;
+                            if (rw > 0 && rh > 0) dStr = rectToPathD(rx, ry, rw, rh, radX, radY);
+                        } else if (tag === 'circle') {
+                            var cx = parseFloat(el.getAttribute('cx')) || 0;
+                            var cy = parseFloat(el.getAttribute('cy')) || 0;
+                            var cr = parseFloat(el.getAttribute('r')) || 0;
+                            if (cr > 0) dStr = ellipseToPathD(cx, cy, cr, cr);
+                        } else if (tag === 'ellipse') {
+                            var ecx = parseFloat(el.getAttribute('cx')) || 0;
+                            var ecy = parseFloat(el.getAttribute('cy')) || 0;
+                            var erx = parseFloat(el.getAttribute('rx')) || 0;
+                            var ery = parseFloat(el.getAttribute('ry')) || 0;
+                            if (erx > 0 && ery > 0) dStr = ellipseToPathD(ecx, ecy, erx, ery);
+                        } else if (tag === 'line') {
+                            var lx1 = parseFloat(el.getAttribute('x1')) || 0;
+                            var ly1 = parseFloat(el.getAttribute('y1')) || 0;
+                            var lx2 = parseFloat(el.getAttribute('x2')) || 0;
+                            var ly2 = parseFloat(el.getAttribute('y2')) || 0;
+                            dStr = 'M ' + lx1 + ' ' + ly1 + ' L ' + lx2 + ' ' + ly2;
                         }
-                    }
-
-                    var rectEls = doc.querySelectorAll('rect');
-                    for (var r = 0; r < rectEls.length; r++) {
-                        var rx = parseFloat(rectEls[r].getAttribute('x')) || 0;
-                        var ry = parseFloat(rectEls[r].getAttribute('y')) || 0;
-                        var rw = parseFloat(rectEls[r].getAttribute('width')) || 0;
-                        var rh = parseFloat(rectEls[r].getAttribute('height')) || 0;
-                        if (rw > 0 && rh > 0) {
-                            dMatches.push('M ' + rx + ' ' + ry + ' h ' + rw + ' v ' + rh + ' h -' + rw + ' Z');
-                        }
-                    }
-
-                    var circEls = doc.querySelectorAll('circle');
-                    for (var c = 0; c < circEls.length; c++) {
-                        var cx = parseFloat(circEls[c].getAttribute('cx')) || 0;
-                        var cy = parseFloat(circEls[c].getAttribute('cy')) || 0;
-                        var cr = parseFloat(circEls[c].getAttribute('r')) || 0;
-                        if (cr > 0) {
-                            var ck = cr * KAPPA;
-                            dMatches.push('M ' + cx + ' ' + (cy - cr) + ' C ' + (cx + ck) + ' ' + (cy - cr) + ', ' + (cx + cr) + ' ' + (cy - ck) + ', ' + (cx + cr) + ' ' + cy + ' C ' + (cx + cr) + ' ' + (cy + ck) + ', ' + (cx + ck) + ' ' + (cy + cr) + ', ' + cx + ' ' + (cy + cr) + ' C ' + (cx - ck) + ' ' + (cy + cr) + ', ' + (cx - cr) + ' ' + (cy + ck) + ', ' + (cx - cr) + ' ' + cy + ' C ' + (cx - cr) + ' ' + (cy - ck) + ', ' + (cx - ck) + ' ' + (cy - cr) + ', ' + cx + ' ' + (cy - cr) + ' Z');
+                        if (dStr) {
+                            var parsed = parseSvgPathD(dStr);
+                            var mat = getCumulativeMatrix(el);
+                            parsed = applyMatrixToSubPaths(parsed, mat);
+                            parsed.forEach(function (sp) {
+                                if (sp.vertices.length >= 2) allSubPaths.push(sp);
+                            });
                         }
                     }
                 }
@@ -937,36 +1134,82 @@
             }
         }
 
-        // Regex fallback if DOMParser didn't find paths
-        if (dMatches.length === 0) {
+        // Regex fallback if DOMParser unavailable or produced no subPaths
+        if (allSubPaths.length === 0) {
+            var dMatches = [];
             var dRegex = /<path[^>]*\bd=["']([^"']+)["'][^>]*>/gi;
             var match;
             while ((match = dRegex.exec(svgString)) !== null) {
                 dMatches.push(match[1]);
             }
 
-            var polyRegex = /<polygon[^>]*\bpoints=["']([^"']+)["'][^>]*>/gi;
+            var polyRegex = /<(polygon|polyline)[^>]*\bpoints=["']([^"']+)["'][^>]*>/gi;
             while ((match = polyRegex.exec(svgString)) !== null) {
-                dMatches.push('M ' + match[1].trim().replace(/\s+/g, ' L ') + ' Z');
+                var pd = polyPointsToPathD(match[2], match[1].toLowerCase() === 'polygon');
+                if (pd) dMatches.push(pd);
+            }
+
+            var circRegex = /<circle[^>]*>/gi;
+            while ((match = circRegex.exec(svgString)) !== null) {
+                var cmx = /\bcx=["']([^"']+)["']/i.exec(match[0]);
+                var cmy = /\bcy=["']([^"']+)["']/i.exec(match[0]);
+                var cmr = /\br=["']([^"']+)["']/i.exec(match[0]);
+                var ccx = cmx ? parseFloat(cmx[1]) : 0, ccy = cmy ? parseFloat(cmy[1]) : 0, ccr = cmr ? parseFloat(cmr[1]) : 0;
+                if (ccr > 0) dMatches.push(ellipseToPathD(ccx, ccy, ccr, ccr));
+            }
+
+            var ellRegex = /<ellipse[^>]*>/gi;
+            while ((match = ellRegex.exec(svgString)) !== null) {
+                var emx = /\bcx=["']([^"']+)["']/i.exec(match[0]);
+                var emy = /\bcy=["']([^"']+)["']/i.exec(match[0]);
+                var erxM = /\brx=["']([^"']+)["']/i.exec(match[0]);
+                var eryM = /\bry=["']([^"']+)["']/i.exec(match[0]);
+                var ecxR = emx ? parseFloat(emx[1]) : 0, ecyR = emy ? parseFloat(emy[1]) : 0;
+                var erxR = erxM ? parseFloat(erxM[1]) : 0, eryR = eryM ? parseFloat(eryM[1]) : 0;
+                if (erxR > 0 && eryR > 0) dMatches.push(ellipseToPathD(ecxR, ecyR, erxR, eryR));
+            }
+
+            var rectRegex = /<rect[^>]*>/gi;
+            while ((match = rectRegex.exec(svgString)) !== null) {
+                var rmx = /\bx=["']([^"']+)["']/i.exec(match[0]);
+                var rmy = /\by=["']([^"']+)["']/i.exec(match[0]);
+                var rmw = /\bwidth=["']([^"']+)["']/i.exec(match[0]);
+                var rmh = /\bheight=["']([^"']+)["']/i.exec(match[0]);
+                var rmrx = /\brx=["']([^"']+)["']/i.exec(match[0]);
+                var rmry = /\bry=["']([^"']+)["']/i.exec(match[0]);
+                var rrxV = rmx ? parseFloat(rmx[1]) : 0, rryV = rmy ? parseFloat(rmy[1]) : 0;
+                var rrwV = rmw ? parseFloat(rmw[1]) : 0, rrhV = rmh ? parseFloat(rmh[1]) : 0;
+                if (rrwV > 0 && rrhV > 0) {
+                    dMatches.push(rectToPathD(rrxV, rryV, rrwV, rrhV, rmrx ? parseFloat(rmrx[1]) : 0, rmry ? parseFloat(rmry[1]) : 0));
+                }
+            }
+
+            var lineRegex = /<line[^>]*>/gi;
+            while ((match = lineRegex.exec(svgString)) !== null) {
+                var lx1M = /\bx1=["']([^"']+)["']/i.exec(match[0]);
+                var ly1M = /\by1=["']([^"']+)["']/i.exec(match[0]);
+                var lx2M = /\bx2=["']([^"']+)["']/i.exec(match[0]);
+                var ly2M = /\by2=["']([^"']+)["']/i.exec(match[0]);
+                dMatches.push('M ' + (lx1M ? parseFloat(lx1M[1]) : 0) + ' ' + (ly1M ? parseFloat(ly1M[1]) : 0) + ' L ' + (lx2M ? parseFloat(lx2M[1]) : 0) + ' ' + (ly2M ? parseFloat(ly2M[1]) : 0));
             }
 
             if (dMatches.length === 0) {
-                // Check if user pasted pure d string: "M 10 10 L 90 90 Z"
-                if (/^[a-df-z\s\d.,+-]+$/i.test(svgString.trim())) {
-                    dMatches.push(svgString.trim());
+                var trimmed = svgString.trim();
+                // Allow valid SVG path commands including scientific notation (e.g. 1e-5)
+                if (/^[a-z\s\d.,+-]+$/i.test(trimmed) && /[ml]/i.test(trimmed)) {
+                    dMatches.push(trimmed);
                 } else {
                     return { ok: false, error: 'لم يتم العثور على أشكال أو مسارات متجهة صالحة في كود SVG.' };
                 }
             }
-        }
 
-        var allSubPaths = [];
-        dMatches.forEach(function (d) {
-            var sps = parseSvgPathD(d);
-            sps.forEach(function (sp) {
-                if (sp.vertices.length >= 2) allSubPaths.push(sp);
+            dMatches.forEach(function (d) {
+                var sps = parseSvgPathD(d);
+                sps.forEach(function (sp) {
+                    if (sp.vertices.length >= 2) allSubPaths.push(sp);
+                });
             });
-        });
+        }
 
         if (allSubPaths.length === 0) {
             return { ok: false, error: 'تعذر استخراج نقاط التحكم من مسارات SVG.' };
@@ -1048,11 +1291,19 @@
             });
         });
 
+        var scaledBounds = calculateBounds(computedSubPaths);
+        var b256 = calculateBounds(shape.subPaths);
+        var lcX = (shape.labelCenter && shape.labelCenter.length === 2) ? shape.labelCenter[0] : ((b256.minX + b256.maxX) / 2);
+        var lcY = (shape.labelCenter && shape.labelCenter.length === 2) ? shape.labelCenter[1] : ((b256.minY + b256.maxY) / 2);
+        var centerOffset = [(lcX - anchor.x) * scale, (lcY - anchor.y) * scale];
+
         return {
             shapeId: shape.id,
             anchorId: ancKey,
             isHollow: (shape.isHollow === true),
             subPaths: computedSubPaths,
+            bounds: scaledBounds,
+            centerOffset: centerOffset,
             extent: maxExtent
         };
     }
@@ -1060,11 +1311,15 @@
     /**
      * Build SVG string for display in UI
      */
-    function getSvgMarkup(shapeId, color, size) {
+    function getSvgMarkup(shapeId, color, size, isHollowOverride) {
         var shape = shapeMap[shapeId] || shapeMap['circle'];
         var c = color || 'currentColor';
         var s = size || 22;
-        return '<svg viewBox="0 0 256 256" width="' + s + '" height="' + s + '" style="color:' + c + '; fill: currentColor; display:block;">' + shape.svg + '</svg>';
+        var hollow = (isHollowOverride !== undefined) ? Boolean(isHollowOverride) : (shape.isHollow === true);
+        var styleStr = (hollow && shape.id !== 'ring' && shape.id !== 'tick' && shape.id !== 'hud_bracket')
+            ? ('color:' + c + '; fill: none; stroke: currentColor; stroke-width: 18; stroke-linecap: round; stroke-linejoin: round; display:block;')
+            : ('color:' + c + '; fill: currentColor; display:block;');
+        return '<svg viewBox="0 0 256 256" width="' + s + '" height="' + s + '" style="' + styleStr + '">' + shape.svg + '</svg>';
     }
 
     return {

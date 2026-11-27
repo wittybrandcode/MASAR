@@ -9,29 +9,30 @@ var TIME_RULER_MOGRT_EXPORTER = (function () {
     function notify(msg, type) {
         if (typeof TIME_RULER_HOST_BRIDGE !== 'undefined' && TIME_RULER_HOST_BRIDGE.setFeedback) {
             TIME_RULER_HOST_BRIDGE.setFeedback(msg, type || '');
-        } else if (typeof showToast === 'function') {
-            showToast(msg);
         }
+    }
+
+    function readExportOptions() {
+        var c = document.getElementById('chk-mogrt-colors');
+        var t = document.getElementById('chk-mogrt-typography');
+        var l = document.getElementById('chk-mogrt-layout');
+        var b = document.getElementById('chk-mogrt-boxes');
+        return {
+            colors: c ? Boolean(c.checked) : true,
+            typography: t ? Boolean(t.checked) : true,
+            layout: l ? Boolean(l.checked) : true,
+            boxes: b ? Boolean(b.checked) : true
+        };
     }
 
     function setupEssentialGraphics(onComplete) {
         if (typeof TIME_RULER_BRIDGE === 'undefined') return;
-        var btnSetup = document.getElementById('btn-setup-eg');
-        if (btnSetup) {
-            btnSetup.disabled = true;
-            btnSetup.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الربط...';
-        }
-
-        TIME_RULER_BRIDGE.callHost('setupEssentialGraphics', {}, function (res) {
-            if (btnSetup) {
-                btnSetup.disabled = false;
-                btnSetup.innerHTML = '<i class="fa-solid fa-sliders"></i> ربط Essential Graphics';
-            }
+        TIME_RULER_BRIDGE.callHost('setupEssentialGraphics', readExportOptions(), function (res) {
             if (res && res.ok) {
                 var count = (res.data && res.data.addedCount) ? res.data.addedCount : 0;
-                notify('تم ربط ' + count + ' خاصية بلوحة Essential Graphics بنجاح!', 'ok');
+                notify('✓ تم ربط ' + count + ' خاصية بلوحة Essential Graphics بنجاح!', 'ok');
             } else {
-                notify('تنبيه: ' + (res ? res.message : 'تعذر ربط اللوحة'), 'warn');
+                notify('⚠️ ' + (res ? res.message : 'تعذر ربط اللوحة'), 'warn');
             }
             if (typeof onComplete === 'function') onComplete(res);
         });
@@ -42,33 +43,26 @@ var TIME_RULER_MOGRT_EXPORTER = (function () {
         var btnExport = document.getElementById('btn-export-mogrt');
         if (btnExport) {
             btnExport.disabled = true;
-            btnExport.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التصدير...';
+            btnExport.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التصدير…';
         }
 
-        TIME_RULER_BRIDGE.callHost('exportMOGRT', {}, function (res) {
+        TIME_RULER_BRIDGE.callHost('exportMOGRT', readExportOptions(), function (res) {
             if (btnExport) {
                 btnExport.disabled = false;
-                btnExport.innerHTML = '<i class="fa-solid fa-file-export"></i> تصدير MOGRT لـ Premiere';
+                btnExport.innerHTML = '<i class="fa-solid fa-file-export"></i> تصدير حزمة MOGRT كاملة';
             }
-            if (res && res.ok) {
+            if (res && res.ok && (!res.data || res.data.exported !== false)) {
                 var path = (res.data && res.data.path) ? res.data.path : 'المجلد الافتراضي';
-                notify('تم تصدير قالب MOGRT بنجاح! المسار: ' + path, 'ok');
+                notify('✓ تم تصدير قالب MOGRT بنجاح! المسار: ' + path, 'ok');
             } else {
-                var errMsg = res ? res.message : 'خطأ غير معروف';
-                notify('فشل التصدير: ' + errMsg, 'err');
+                var errMsg = (res && res.message) ? res.message : 'تعذر التصدير من After Effects';
+                notify('✕ فشل التصدير: ' + errMsg, 'err');
             }
             if (typeof onComplete === 'function') onComplete(res);
         });
     }
 
     function init() {
-        var btnSetup = document.getElementById('btn-setup-eg');
-        if (btnSetup) {
-            btnSetup.addEventListener('click', function () {
-                setupEssentialGraphics();
-            });
-        }
-
         var btnExport = document.getElementById('btn-export-mogrt');
         if (btnExport) {
             btnExport.addEventListener('click', function () {

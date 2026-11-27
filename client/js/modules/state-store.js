@@ -7,8 +7,14 @@ var TIME_RULER_STATE_STORE = (function () {
     'use strict';
 
     var STORAGE_KEY = 'MASAR_PRO_STATE_V1';
+    var CURRENT_SCHEMA_VERSION = 2;
+    var MAX_HISTORY = 30;
 
     var activeState = null;
+    var _historyPast = [];
+    var _historyFuture = [];
+    var _isApplyingHistory = false;
+    var _historyListeners = [];
 
     var SHAPE_NAMES = {
         'inherit': 'يتبع العام',
@@ -43,6 +49,7 @@ var TIME_RULER_STATE_STORE = (function () {
     }
 
     var defaultState = {
+        schemaVersion: CURRENT_SCHEMA_VERSION,
         liveSync: true,
         selectedNodeIndex: 0,
         orientation: 'horizontal',
@@ -112,13 +119,6 @@ var TIME_RULER_STATE_STORE = (function () {
         behindBoxStrokeColor: '#f59e0b',
         behindBoxStrokeWidth: 1.5,
         behindBoxRadius: 6,
-
-        frontBoxEnabled: true,
-        frontBoxFillColor: '#0b1120',
-        frontBoxFillOpacity: 85,
-        frontBoxStrokeColor: '#10b981',
-        frontBoxStrokeWidth: 1.5,
-        frontBoxRadius: 6,
 
         boxFillColor: '#0b1120',
         boxFillOpacity: 85,
@@ -450,11 +450,13 @@ var TIME_RULER_STATE_STORE = (function () {
         }
         try {
             var list = getUserTemplates();
+            var clonedState = JSON.parse(JSON.stringify(tplObj.state));
+            migrateState(clonedState);
             var newTpl = {
                 id: 'tpl_' + Date.now(),
                 name: tplObj.name || 'قالب مستورد',
                 createdAt: new Date().toISOString(),
-                state: tplObj.state
+                state: clonedState
             };
             list.unshift(newTpl);
             localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(list));
@@ -479,24 +481,34 @@ var TIME_RULER_STATE_STORE = (function () {
         return s;
     }
 
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     /* ------------------------------------------------------------------ */
     /* Triple-Source Schema Normalizer & Backward Compatibility Adapter   */
     /* ------------------------------------------------------------------ */
 
     function normalizeNodeSources(node, index) {
+        if (!node || typeof node !== 'object') return;
         var blueList = ['#38bdf8', '#0e71eb', '#1473e6', '#0284c7', '#2680eb', '#141c28'];
-        if (node.customColor && blueList.indexOf(node.customColor.toLowerCase()) !== -1) {
+        if (node.customColor && blueList.indexOf(String(node.customColor).toLowerCase()) !== -1) {
             node.customColor = '#10b981';
         }
         if (node.sources && node.sources.front) {
-            if (node.sources.front.titleBoxStroke && blueList.indexOf(node.sources.front.titleBoxStroke.toLowerCase()) !== -1) {
+            if (node.sources.front.titleBoxStroke && blueList.indexOf(String(node.sources.front.titleBoxStroke).toLowerCase()) !== -1) {
                 node.sources.front.titleBoxStroke = '#10b981';
             }
-            if (node.sources.front.descBoxStroke && blueList.indexOf(node.sources.front.descBoxStroke.toLowerCase()) !== -1) {
+            if (node.sources.front.descBoxStroke && blueList.indexOf(String(node.sources.front.descBoxStroke).toLowerCase()) !== -1) {
                 node.sources.front.descBoxStroke = '#64748b';
             }
         }
-        if (!node || typeof node !== 'object') return;
         node.id = node.id || ('node_' + (index + 1));
         if (node.isCollapsed === undefined) node.isCollapsed = false;
 
@@ -610,22 +622,24 @@ var TIME_RULER_STATE_STORE = (function () {
         }
 
         if (f) {
-            if (f.type === 'title_text' || f.type === 'title_list' || f.type === 'title') {
-                node.title = f.title || '';
-            } else if (f.type === 'number_title') {
-                node.title = (f.number ? ('#' + f.number + ' ') : '') + (f.title || '');
-            } else if (f.type === 'icon_title') {
-                node.title = (f.icon ? (f.icon + ' ') : '') + (f.title || '');
+            if (f.type === 'title_text' || f.type === 'title_list' || f.type === 'title' || f.type === 'number_title' || f.type === 'icon_title') {
+                if (f.title !== undefined && f.title !== '') {
+                    node.title = f.title;
+                } else if (f.title === '' && (f.type === 'title_text' || f.type === 'title' || f.type === 'title_list')) {
+                    node.title = '';
+                }
             } else if (f.type === 'badge') {
                 if (!node.title) {
                     node.title = f.badge || f.number || f.text || '';
                 }
-            } else if (f.type === 'text') {
-                // Keep existing node.title intact; never wipe it out on preset switch
             }
 
             if (f.type === 'title_list' || f.type === 'list') {
-                node.description = (f.items && f.items.length > 0) ? f.items.join('\n') : (f.text || '');
+                if (f.items && f.items.length > 0) {
+                    node.description = f.items.join('\n');
+                } else if (f.text) {
+                    node.description = f.text;
+                }
             } else if (f.type === 'title_text' || f.type === 'text') {
                 node.description = f.text || '';
             } else if (f.type === 'number_text') {
@@ -655,9 +669,228 @@ var TIME_RULER_STATE_STORE = (function () {
         }
     }
 
+    /* ------------------------------------------------------------------ */
+    /* Schema Migration (v1 -> v2) & In-Memory Undo/Redo History Stack    */
+    /* ------------------------------------------------------------------ */
+    var LEGACY_FRONT_BOX_KEYS = [
+        'frontBoxColor',
+        'frontBoxEnabled',
+        'frontBoxFillColor',
+        'frontBoxFillOpacity',
+        'frontBoxStrokeColor',
+        'frontBoxStrokeWidth',
+        'frontBoxRadius'
+    ];
+
+    function migrateState(parsed) {
+        if (!parsed || typeof parsed !== 'object') return parsed;
+        var ver = (typeof parsed.schemaVersion === 'number' && !isNaN(parsed.schemaVersion))
+            ? parsed.schemaVersion
+            : 1;
+
+        if (ver < 2) {
+            if (parsed.frontBoxColor !== undefined) {
+                if (parsed.titleBoxFillColor === undefined) parsed.titleBoxFillColor = parsed.frontBoxColor;
+                if (parsed.descBoxFillColor === undefined) parsed.descBoxFillColor = parsed.frontBoxColor;
+            }
+
+            var frontBoxMap = [
+                { src: 'frontBoxEnabled', targets: ['titleBoxEnabled'] },
+                { src: 'frontBoxFillColor', targets: ['titleBoxFillColor', 'descBoxFillColor'] },
+                { src: 'frontBoxFillOpacity', targets: ['titleBoxFillOpacity', 'descBoxFillOpacity'] },
+                { src: 'frontBoxStrokeColor', targets: ['titleBoxStrokeColor'] },
+                { src: 'frontBoxStrokeWidth', targets: ['titleBoxStrokeWidth', 'descBoxStrokeWidth'] },
+                { src: 'frontBoxRadius', targets: ['titleBoxRadius', 'descBoxRadius'] }
+            ];
+
+            for (var i = 0; i < frontBoxMap.length; i++) {
+                var rule = frontBoxMap[i];
+                if (parsed[rule.src] !== undefined) {
+                    for (var t = 0; t < rule.targets.length; t++) {
+                        var tk = rule.targets[t];
+                        if (parsed[tk] === undefined) {
+                            parsed[tk] = parsed[rule.src];
+                        }
+                    }
+                }
+            }
+
+            if (parsed.boxMode === undefined && parsed.boxEnabled !== undefined) {
+                parsed.boxMode = parsed.boxEnabled ? 'solid' : 'off';
+            }
+        }
+
+        for (var k = 0; k < LEGACY_FRONT_BOX_KEYS.length; k++) {
+            if (parsed.hasOwnProperty(LEGACY_FRONT_BOX_KEYS[k])) {
+                delete parsed[LEGACY_FRONT_BOX_KEYS[k]];
+            }
+        }
+
+        if (!isValidShape(parsed.nodeShape) || parsed.nodeShape === 'inherit') {
+            if (parsed.nodeShape !== undefined) {
+                parsed.nodeShape = 'circle';
+            }
+        }
+
+        if (Array.isArray(parsed.nodes)) {
+            parsed.nodes.forEach(function (n, idx) {
+                normalizeNodeSources(n, idx);
+            });
+        }
+
+        parsed.schemaVersion = CURRENT_SCHEMA_VERSION;
+        return parsed;
+    }
+
+    function serializeForHistory(stateObj) {
+        return JSON.stringify(stateObj, function (key, val) {
+            if (key === 'vectorData') return undefined;
+            return val;
+        });
+    }
+
+    function applySnapshotInPlace(targetState, jsonStr) {
+        if (!targetState || typeof targetState !== 'object') return;
+        var parsed = JSON.parse(jsonStr);
+        migrateState(parsed);
+        var key;
+        for (key in targetState) {
+            if (targetState.hasOwnProperty(key) && !parsed.hasOwnProperty(key)) {
+                delete targetState[key];
+            }
+        }
+        for (key in parsed) {
+            if (parsed.hasOwnProperty(key)) {
+                targetState[key] = parsed[key];
+            }
+        }
+    }
+
+    function notifyHistoryListeners() {
+        if (!_historyListeners.length) return;
+        var info = getHistoryInfo();
+        for (var i = 0; i < _historyListeners.length; i++) {
+            try {
+                _historyListeners[i](info);
+            } catch (err) {}
+        }
+    }
+
+    function onHistoryChange(fn) {
+        if (typeof fn !== 'function') return function () {};
+        _historyListeners.push(fn);
+        return function () {
+            var idx = _historyListeners.indexOf(fn);
+            if (idx !== -1) _historyListeners.splice(idx, 1);
+        };
+    }
+
+    function resetHistory(stateObj, label) {
+        _historyPast = [];
+        _historyFuture = [];
+        if (stateObj && typeof stateObj === 'object') {
+            _historyPast.push({
+                json: serializeForHistory(stateObj),
+                label: label || 'الوضع الابتدائي',
+                ts: Date.now(),
+                pinned: true
+            });
+        }
+        notifyHistoryListeners();
+    }
+
+    function recordSnapshot(stateObj, label, coalesceMs) {
+        if (!stateObj || typeof stateObj !== 'object' || _isApplyingHistory) return false;
+        var effLabel = label || 'تعديل';
+        var effCoalesce = (typeof coalesceMs === 'number' && !isNaN(coalesceMs)) ? coalesceMs : 500;
+        var nextJson = serializeForHistory(stateObj);
+        var now = Date.now();
+        var top = (_historyPast.length > 0) ? _historyPast[_historyPast.length - 1] : null;
+
+        if (top && top.json === nextJson) {
+            return false;
+        }
+
+        _historyFuture = [];
+
+        if (_historyPast.length >= 2 && top && !top.pinned && effCoalesce > 0 && (now - top.ts) <= effCoalesce && top.label === effLabel) {
+            top.json = nextJson;
+            top.ts = now;
+        } else {
+            _historyPast.push({
+                json: nextJson,
+                label: effLabel,
+                ts: now,
+                pinned: (effCoalesce <= 0)
+            });
+            while (_historyPast.length > MAX_HISTORY) {
+                _historyPast.shift();
+            }
+        }
+
+        notifyHistoryListeners();
+        return true;
+    }
+
+    function canUndo() {
+        return _historyPast.length > 1;
+    }
+
+    function canRedo() {
+        return _historyFuture.length > 0;
+    }
+
+    function getHistoryInfo() {
+        return {
+            canUndo: canUndo(),
+            canRedo: canRedo(),
+            pastCount: _historyPast.length,
+            futureCount: _historyFuture.length,
+            undoLabel: canUndo() ? _historyPast[_historyPast.length - 1].label : '',
+            redoLabel: canRedo() ? _historyFuture[_historyFuture.length - 1].label : ''
+        };
+    }
+
+    function undoState(stateObj) {
+        if (!stateObj || !canUndo()) return { ok: false };
+        _isApplyingHistory = true;
+        try {
+            var popped = _historyPast.pop();
+            _historyFuture.push(popped);
+            var prev = _historyPast[_historyPast.length - 1];
+            applySnapshotInPlace(stateObj, prev.json);
+            saveState(stateObj, true, { skipHistory: true });
+            notifyHistoryListeners();
+            return { ok: true, label: popped.label || 'تعديل', state: stateObj };
+        } finally {
+            _isApplyingHistory = false;
+        }
+    }
+
+    function redoState(stateObj) {
+        if (!stateObj || !canRedo()) return { ok: false };
+        _isApplyingHistory = true;
+        try {
+            var next = _historyFuture.pop();
+            _historyPast.push(next);
+            while (_historyPast.length > MAX_HISTORY) {
+                _historyPast.shift();
+            }
+            applySnapshotInPlace(stateObj, next.json);
+            saveState(stateObj, true, { skipHistory: true });
+            notifyHistoryListeners();
+            return { ok: true, label: next.label || 'تعديل', state: stateObj };
+        } finally {
+            _isApplyingHistory = false;
+        }
+    }
+
     var _saveTimer = null;
-    function saveState(stateObj, immediate) {
+    function saveState(stateObj, immediate, options) {
         if (!stateObj) stateObj = activeState;
+        if (!options || !options.skipHistory) {
+            recordSnapshot(stateObj, options && options.label, options && options.coalesceMs);
+        }
         if (immediate === true) {
             if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
             try {
@@ -683,6 +916,7 @@ var TIME_RULER_STATE_STORE = (function () {
             if (raw) {
                 var parsed = JSON.parse(raw);
                 if (parsed && typeof parsed === 'object') {
+                    migrateState(parsed);
                     for (var k in parsed) {
                         if (parsed.hasOwnProperty(k)) {
                             stateObj[k] = parsed[k];
@@ -692,14 +926,9 @@ var TIME_RULER_STATE_STORE = (function () {
             }
         } catch (e) {}
 
+        migrateState(stateObj);
         if (!isValidShape(stateObj.nodeShape) || stateObj.nodeShape === 'inherit') {
             stateObj.nodeShape = 'circle';
-        }
-
-        if (Array.isArray(stateObj.nodes)) {
-            stateObj.nodes.forEach(function (n, idx) {
-                normalizeNodeSources(n, idx);
-            });
         }
     }
 
@@ -707,20 +936,31 @@ var TIME_RULER_STATE_STORE = (function () {
         if (!activeState) {
             activeState = JSON.parse(JSON.stringify(defaultState));
             loadSavedState(activeState);
+            resetHistory(activeState, 'الوضع الابتدائي');
         }
         return activeState;
     }
 
     return {
         STORAGE_KEY: STORAGE_KEY,
+        CURRENT_SCHEMA_VERSION: CURRENT_SCHEMA_VERSION,
         SHAPE_NAMES: SHAPE_NAMES,
         PRESETS: PRESETS,
         getDefaultState: function () {
-            return JSON.parse(JSON.stringify(defaultState));
+            return migrateState(JSON.parse(JSON.stringify(defaultState)));
         },
         getState: getState,
         saveState: saveState,
         loadSavedState: loadSavedState,
+        migrateState: migrateState,
+        resetHistory: resetHistory,
+        recordSnapshot: recordSnapshot,
+        undoState: undoState,
+        redoState: redoState,
+        canUndo: canUndo,
+        canRedo: canRedo,
+        getHistoryInfo: getHistoryInfo,
+        onHistoryChange: onHistoryChange,
         toStandardDigits: toStandardDigits,
         isValidShape: isValidShape,
         normalizeNodeSources: normalizeNodeSources,
@@ -728,7 +968,8 @@ var TIME_RULER_STATE_STORE = (function () {
         getUserTemplates: getUserTemplates,
         saveUserTemplate: saveUserTemplate,
         deleteUserTemplate: deleteUserTemplate,
-        importUserTemplate: importUserTemplate
+        importUserTemplate: importUserTemplate,
+        escapeHtml: escapeHtml
     };
 })();
 

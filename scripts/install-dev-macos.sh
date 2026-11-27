@@ -1,4 +1,4 @@
-# TIME RULER - developer installer for macOS (unsigned panel)
+# MASAR PRO - developer installer for macOS (unsigned panel)
 # Usage:
 #   sh install-dev-macos.sh              # install/refresh copy
 #   sh install-dev-macos.sh --debug      # also enable PlayerDebugMode
@@ -7,7 +7,7 @@
 set -e
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DEST="$HOME/Library/Application Support/Adobe/CEP/extensions/TIME_RULER"
+DEST="$HOME/Library/Application Support/Adobe/CEP/extensions/MASAR"
 
 if [ "$1" = "--uninstall" ]; then
     if [ -d "$DEST" ]; then
@@ -20,7 +20,7 @@ if [ "$1" = "--uninstall" ]; then
 fi
 
 mkdir -p "$DEST"
-for item in CSXS client host presets README.md CHANGELOG.md LICENSES.md; do
+for item in CSXS client host README.md; do
     if [ -e "$PROJECT_ROOT/$item" ]; then
         cp -R "$PROJECT_ROOT/$item" "$DEST/"
     else
@@ -45,4 +45,4 @@ echo ""
 echo "Installed to: $DEST"
 echo "Next steps:"
 echo "  1. Restart After Effects (fully quit and relaunch)."
-echo "  2. Open the panel: Window > Extensions > TIME RULER."
+echo "  2. Open the panel: Window > Extensions > MASAR PRO."

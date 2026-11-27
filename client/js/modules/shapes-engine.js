@@ -8,6 +8,16 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
 
     function $(id) { return document.getElementById(id); }
 
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     var modalTargetNodeIndex = -1;
     var currentImportParsed = null;
     var currentImportAnchor = 'center';
@@ -52,7 +62,7 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
             tile.title = sh.name + ' (' + sh.nameEn + ')';
             tile.innerHTML = 
                 '<div class="shape-tile-icon">' + TR_SVG_SHAPES.getSvgMarkup(sh.id, 'currentColor', 24) + '</div>' +
-                '<span class="shape-tile-label">' + sh.name + '</span>';
+                '<span class="shape-tile-label">' + escapeHtml(sh.name) + '</span>';
 
             if (sh.category === 'custom') {
                 tile.classList.add('is-custom-shape');
@@ -64,6 +74,12 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
                     ev.stopPropagation();
                     TR_SVG_SHAPES.removeCustomShape(sh.id);
                     if (state.nodeShape === sh.id) state.nodeShape = 'circle';
+                    (state.nodes || []).forEach(function (n) {
+                        if (n.customShape === sh.id) {
+                            n.customShape = 'inherit';
+                            if (n.sources && n.sources.center) n.sources.center.shape = 'inherit';
+                        }
+                    });
                     if (callbacks && typeof callbacks.onUpdate === 'function') callbacks.onUpdate();
                     initGlobalShapeDropdown(state, callbacks);
                 });
@@ -102,29 +118,25 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
             modal.style.display = 'none';
         }
 
+        function cancelModal() {
+            if (state.nodeShape !== previousGlobalShape) {
+                state.nodeShape = previousGlobalShape;
+                if (callbacks && typeof callbacks.onUpdate === 'function') callbacks.onUpdate();
+            }
+            closeModal();
+        }
+
         var btnClose = $('btn-close-shapes-modal');
         var btnCancel = $('btn-cancel-shapes-modal');
         var btnAccept = $('btn-accept-shapes-modal');
 
         if (btnClose && !btnClose._wired) {
             btnClose._wired = true;
-            btnClose.addEventListener('click', function () {
-                if (state.nodeShape !== previousGlobalShape) {
-                    state.nodeShape = previousGlobalShape;
-                    if (callbacks && typeof callbacks.onUpdate === 'function') callbacks.onUpdate();
-                }
-                closeModal();
-            });
+            btnClose.addEventListener('click', cancelModal);
         }
         if (btnCancel && !btnCancel._wired) {
             btnCancel._wired = true;
-            btnCancel.addEventListener('click', function () {
-                if (state.nodeShape !== previousGlobalShape) {
-                    state.nodeShape = previousGlobalShape;
-                    if (callbacks && typeof callbacks.onUpdate === 'function') callbacks.onUpdate();
-                }
-                closeModal();
-            });
+            btnCancel.addEventListener('click', cancelModal);
         }
         if (btnAccept && !btnAccept._wired) {
             btnAccept._wired = true;
@@ -143,7 +155,7 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
         if (!modal._wiredOverlay) {
             modal._wiredOverlay = true;
             modal.addEventListener('click', function (e) {
-                if (e.target === modal) closeModal();
+                if (e.target === modal) cancelModal();
             });
         }
 
@@ -153,15 +165,6 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
             btnModalSvg.addEventListener('click', function (e) {
                 e.stopPropagation();
                 closeModal();
-                openSvgImporterModal(-1, state);
-            });
-        }
-
-        var btnTab2Import = $('btn-open-importer-tab2');
-        if (btnTab2Import && !btnTab2Import._wired) {
-            btnTab2Import._wired = true;
-            btnTab2Import.addEventListener('click', function (e) {
-                e.stopPropagation();
                 openSvgImporterModal(-1, state);
             });
         }
@@ -189,9 +192,6 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
         var pasteBox = $('paste-textarea-box');
         if (pasteBox) pasteBox.style.display = 'none';
 
-        var btnTogglePaste = $('btn-toggle-paste');
-        if (btnTogglePaste) btnTogglePaste.classList.remove('open');
-
         var tabFile = $('btn-tab-src-file');
         var tabCode = $('btn-tab-src-code');
         var dropzone = $('svg-dropzone');
@@ -209,7 +209,7 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
             });
         }
 
-        var btnConfirm = $('btn-accept-svg-modal') || $('btn-confirm-svg-import');
+        var btnConfirm = $('btn-accept-svg-modal');
         if (btnConfirm) btnConfirm.disabled = true;
 
         setModalAnchor('center');
@@ -221,9 +221,6 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
 
         var stats = $('lbl-svg-sim-stats');
         if (stats) stats.textContent = '-';
-
-        var marker = $('ruler-sim-marker');
-        if (marker) marker.innerHTML = '';
 
         setModalStatus('اختر ملف SVG أو الصق الكود', '');
 
@@ -249,22 +246,11 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
 
     function setModalAnchor(anchorId) {
         currentImportAnchor = anchorId || 'center';
-        var overlay = $('canvas-anchor-overlay');
-        if (overlay) {
-            overlay.querySelectorAll('.canvas-anchor-pt').forEach(function (pt) {
-                pt.classList.toggle('active', pt.getAttribute('data-anchor') === currentImportAnchor);
-            });
-        }
         var modalMatrix = $('modal-anchor-matrix');
         if (modalMatrix) {
             modalMatrix.querySelectorAll('button[data-anchor]').forEach(function (pt) {
                 pt.classList.toggle('active', pt.getAttribute('data-anchor') === currentImportAnchor);
             });
-        }
-        var lbl = $('lbl-modal-anchor-name');
-        if (lbl && typeof TR_SVG_SHAPES !== 'undefined' && TR_SVG_SHAPES.ANCHORS[currentImportAnchor]) {
-            var aObj = TR_SVG_SHAPES.ANCHORS[currentImportAnchor];
-            lbl.textContent = aObj.name;
         }
         updateLiveRulerSimulation();
     }
@@ -276,12 +262,11 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
         }
 
         currentRawSvgContent = rawSvg;
-        var isAutoFit = $('chk-import-autofit') ? $('chk-import-autofit').checked : true;
-        var res = TR_SVG_SHAPES.parseSvgString(rawSvg, { autoFit: isAutoFit, padding: 26 });
+        var res = TR_SVG_SHAPES.parseSvgString(rawSvg, { autoFit: true, padding: 26 });
 
         if (!res || !res.ok) {
             setModalStatus('✕ ' + (res ? res.error : 'تعذر تحليل SVG'), 'err');
-            var btnConfirm = $('btn-accept-svg-modal') || $('btn-confirm-svg-import');
+            var btnConfirm = $('btn-accept-svg-modal');
             if (btnConfirm) btnConfirm.disabled = true;
             return;
         }
@@ -302,7 +287,7 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
 
         setModalStatus('✓ تم التحليل بنجاح (' + res.stats.verticesCount + ' نقطة)', 'ok');
 
-        var btnConfirm = $('btn-accept-svg-modal') || $('btn-confirm-svg-import');
+        var btnConfirm = $('btn-accept-svg-modal');
         if (btnConfirm) btnConfirm.disabled = false;
 
         updateLiveRulerSimulation();
@@ -316,33 +301,21 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
         var strokeStyle = currentImportHollow ? 'currentColor' : 'none';
         var strokeWidth = currentImportHollow ? '14' : '0';
 
-        var svgHtml = '<svg viewBox="0 0 256 256" width="116" height="116" style="color: #10b981; fill: ' + fillStyle + '; stroke: ' + strokeStyle + '; stroke-width: ' + strokeWidth + '; display:block;">' +
+        var aObj = (typeof TR_SVG_SHAPES !== 'undefined' && TR_SVG_SHAPES.ANCHORS[currentImportAnchor])
+            ? TR_SVG_SHAPES.ANCHORS[currentImportAnchor]
+            : { x: 128, y: 128 };
+        var anchorDot = '<circle cx="' + aObj.x + '" cy="' + aObj.y + '" r="10" fill="#f59e0b" stroke="#0b1120" stroke-width="4" />';
+
+        var svgHtml = '<svg viewBox="-16 -16 288 288" width="116" height="116" style="color: #10b981; fill: ' + fillStyle + '; stroke: ' + strokeStyle + '; stroke-width: ' + strokeWidth + '; display:block;">' +
             currentImportParsed.svgMarkup +
+            anchorDot +
             '</svg>';
 
         layer.innerHTML = svgHtml;
     }
 
     function updateLiveRulerSimulation() {
-        var marker = $('ruler-sim-marker');
-        if (!marker || !currentImportParsed) return;
-
-        var fillStyle = currentImportHollow ? 'none' : '#10b981';
-        var strokeStyle = currentImportHollow ? '#10b981' : 'none';
-        var strokeWidth = currentImportHollow ? '14' : '0';
-
-        marker.innerHTML = '<svg viewBox="0 0 256 256" width="22" height="22" style="fill: ' + fillStyle + '; stroke: ' + strokeStyle + '; stroke-width: ' + strokeWidth + '; display:block;">' +
-            currentImportParsed.svgMarkup +
-            '</svg>';
-
-        var aObj = (typeof TR_SVG_SHAPES !== 'undefined' && TR_SVG_SHAPES.ANCHORS[currentImportAnchor])
-            ? TR_SVG_SHAPES.ANCHORS[currentImportAnchor]
-            : { x: 128, y: 128 };
-
-        var shiftXPct = -((aObj.x / 256) * 100);
-        var shiftYPct = -((aObj.y / 256) * 100);
-
-        marker.style.transform = 'translate(' + shiftXPct + '%, ' + shiftYPct + '%)';
+        renderCanvasPreview();
     }
 
     function initSvgImporterModal(state, onShapeImported) {
@@ -439,17 +412,6 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
             });
         }
 
-        var anchorOverlay = $('canvas-anchor-overlay');
-        if (anchorOverlay) {
-            anchorOverlay.addEventListener('click', function (e) {
-                var btn = e.target.closest('.canvas-anchor-pt');
-                if (btn) {
-                    var aKey = btn.getAttribute('data-anchor');
-                    setModalAnchor(aKey);
-                }
-            });
-        }
-
         var modalMatrix = $('modal-anchor-matrix');
         if (modalMatrix) {
             modalMatrix.addEventListener('click', function (e) {
@@ -475,47 +437,22 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
             });
         }
 
-        var btnSolid = $('btn-import-solid');
-        var btnHollow = $('btn-import-hollow');
-        if (btnSolid && btnHollow) {
-            btnSolid.addEventListener('click', function () {
-                currentImportHollow = false;
-                btnSolid.classList.add('active');
-                btnHollow.classList.remove('active');
-                renderCanvasPreview();
-                updateLiveRulerSimulation();
-            });
-
-            btnHollow.addEventListener('click', function () {
-                currentImportHollow = true;
-                btnHollow.classList.add('active');
-                btnSolid.classList.remove('active');
-                renderCanvasPreview();
-                updateLiveRulerSimulation();
-            });
-        }
-
-        var chkAutofit = $('chk-import-autofit');
-        if (chkAutofit) {
-            chkAutofit.addEventListener('change', function () {
-                if (currentRawSvgContent) {
-                    handleSvgLoaded(currentRawSvgContent, $('inp-imported-name').value);
-                }
-            });
-        }
-
-        var btnConfirm = $('btn-accept-svg-modal') || $('btn-confirm-svg-import');
+        var btnConfirm = $('btn-accept-svg-modal');
         if (btnConfirm) {
             btnConfirm.addEventListener('click', function () {
                 if (!currentImportParsed || !currentImportParsed.ok) return;
 
                 var rawName = $('inp-imported-name') ? $('inp-imported-name').value.trim() : '';
-                var cleanName = sanitizeSvgName(rawName) || ('شكل مخصص ' + (TR_SVG_SHAPES.getCustomShapes().length + 1));
+                var baseName = sanitizeSvgName(rawName) || ('شكل مخصص ' + (TR_SVG_SHAPES.getCustomShapes().length + 1));
+                var allCustom = TR_SVG_SHAPES.getCustomShapes();
+                var cleanName = baseName;
+                var suffixIdx = 2;
+                while (allCustom.some(function (cs) { return cs.name === cleanName; })) {
+                    cleanName = baseName + ' ' + suffixIdx;
+                    suffixIdx++;
+                }
 
-                var existingCustom = TR_SVG_SHAPES.getCustomShapes().find(function (cs) {
-                    return cs.name === cleanName;
-                });
-                var sId = existingCustom ? existingCustom.id : ('custom_' + Date.now());
+                var sId = 'custom_' + Date.now() + '_' + Math.floor(Math.random() * 100);
 
                 var newShapeDef = {
                     id: sId,
@@ -528,7 +465,11 @@ var TIME_RULER_SHAPES_ENGINE = (function () {
                     subPaths: currentImportParsed.subPaths
                 };
 
-                TR_SVG_SHAPES.addCustomShape(newShapeDef);
+                var addRes = TR_SVG_SHAPES.addCustomShape(newShapeDef);
+                if (!addRes || addRes.ok === false) {
+                    setModalStatus('✕ ' + ((addRes && addRes.error) ? addRes.error : 'تعذر حفظ الشكل محلياً'), 'err');
+                    return;
+                }
 
                 if (modalTargetNodeIndex >= 0 && state.nodes && state.nodes[modalTargetNodeIndex]) {
                     var targetNode = state.nodes[modalTargetNodeIndex];

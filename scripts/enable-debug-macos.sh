@@ -1,5 +1,5 @@
 #!/bin/sh
-# TIME RULER development only: allow unsigned CEP extensions (PlayerDebugMode).
+# MASAR PRO development only: allow unsigned CEP extensions (PlayerDebugMode).
 # AE 2023 ships CEP 11; AE 2024/2025 may ship CEP 12. Both are set; harmless.
 # Run, then fully restart After Effects. Do NOT ship this step to end users of a signed distribution.
 defaults write com.adobe.CSXS.11 PlayerDebugMode 1
